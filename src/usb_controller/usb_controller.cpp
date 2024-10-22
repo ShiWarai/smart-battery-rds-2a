@@ -5,24 +5,29 @@ void UsbController::clearInputBuffer() {
     while (Serial.available())
         Serial.read();
 }
-
+int UsbController::inputRead(){
+    String str;
+    while(1){
+        while (!Serial.available()); // Ожидание ввода
+        char a = Serial.read();
+        str+=a;
+        if((int)a==13) break;
+        else{Serial.print(a);}}
+    return str.toInt();
+}
 void UsbController::com_menu() {
 	clearInputBuffer();
 
-    int choice;
+    
     while (true) {
         // Вывод меню
-        Serial.println("Меню:");
+        Serial.println("\n\nМеню:");
         Serial.println("1) Настройки");
         Serial.println("2) Сброс");
         Serial.println("0) Выйти");
-        Serial.print("Выберите вариант: ");
         
-        while (!Serial.available()); // Ожидание ввода
-        choice = Serial.parseInt();
-        Serial.read(); // Очистка буфера
-
-        switch (choice) {
+        
+        switch (inputRead()) {
             case 1:
                 settings_menu();
                 break;
@@ -46,22 +51,15 @@ void UsbController::settings_menu() {
 
     while (true) {
         // Вывод меню настроек
-        Serial.println("Настройки:");
+        Serial.println("\n\nМеню\\Настройки:");
         Serial.println("1) ID");
         Serial.println("0) Назад");
-        Serial.println("Выберите вариант: ");
         
-        while (!Serial.available()); // Ожидание ввода
-        setting_choice = Serial.parseInt();
-        Serial.read(); // Очистка буфера
-
-        
-        switch (setting_choice) {
+        switch (inputRead()) {
             case 1:
-                Serial.print("Введите новый ID: ");
-                while (!Serial.available());
+                Serial.print("\nВведите новый ID: ");
 
-                update.value = (uint32_t)Serial.parseInt();
+                update.value = (uint32_t)inputRead();
                 update.key = SETTING_TYPE::battery_id;
 
                 xQueueSend(settingUpdateQueue, &update, portMAX_DELAY);

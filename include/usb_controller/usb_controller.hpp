@@ -13,4 +13,5 @@ private:
     static void clearInputBuffer();
     static void com_menu();
     static void settings_menu();
+    static int inputRead();
 };
