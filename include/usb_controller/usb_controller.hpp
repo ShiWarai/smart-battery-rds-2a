@@ -13,6 +13,7 @@ private:
     static void clearInputBuffer();
     static void com_menu();
     static void settingsMenu();
+    static void test();
 
     static String readInput();
     static String readString(error_t (String));

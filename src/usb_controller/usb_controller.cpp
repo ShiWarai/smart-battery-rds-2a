@@ -92,7 +92,8 @@ void UsbController::com_menu() {
         // Вывод меню
         Serial.println("\n\nМеню:");
         Serial.println("1) Настройки");
-        Serial.println("2) Сброс");
+        Serial.println("2) Тест");
+        Serial.println("3) Сброс");
         Serial.println("0) Выйти");
         
         
@@ -101,6 +102,9 @@ void UsbController::com_menu() {
                 settingsMenu();
                 break;
             case 2:
+                settingsMenu();
+                break;
+            case 3:
 				nvs_flash_erase();
 				nvs_flash_init();
                 ESP.restart(); // Перезапуск ESP32
@@ -112,6 +116,10 @@ void UsbController::com_menu() {
     }
 }
 
+void UsbController::test(){//тестирование работы всех систем(дисплей, пищалка, вольтамперметр(статистика в консоль), wi-fi(статистика в консоль))
+
+}
+
 void UsbController::settingsMenu() {
     int setting_choice;
     DECLARE_SETTING_TYPES_VARIANT(UNIQUE_SETTINGS_TYPES) buffer;
@@ -121,7 +129,13 @@ void UsbController::settingsMenu() {
     while (true) {
         // Вывод меню настроек
         Serial.println("\n\nМеню\\Настройки:");
-        Serial.println("1) ID");
+        Serial.print("1) ID             =");Serial.println(settings.battery_id);
+        Serial.print("2) wifi_ssid      =");Serial.println(settings.wifi_ssid);
+        Serial.print("3) wifi_password  =");Serial.println(settings.wifi_password);
+        Serial.print("4) sensor_delay   =");Serial.println(settings.sensor_delay);
+        Serial.print("5) usb_delay      =");Serial.println(settings.usb_delay);
+        Serial.print("6) wireless_delay =");Serial.println(settings.wireless_delay);
+        Serial.print("7) display_time   =");Serial.println(settings.display_time);
         Serial.println("0) Назад");
         
         switch (readUInt32(validate_uint)) {
@@ -130,6 +144,72 @@ void UsbController::settingsMenu() {
 
                 update.value = readUInt32(validate_id);
                 update.key = SETTING_TYPE::battery_id;
+
+                if(std::get<uint32_t>(update.value) == 0)
+                    break;
+
+                xQueueSend(settingUpdateQueue, &update, portMAX_DELAY);
+                break;
+                case 2:
+                Serial.print("\nВведите новый wifi_ssid: ");
+
+                update.value = readString(0);
+                update.key = SETTING_TYPE::wifi_ssid;
+
+                if(std::get<uint32_t>(update.value) == 0)
+                    break;
+
+                xQueueSend(settingUpdateQueue, &update, portMAX_DELAY);
+                break;
+                case 3:
+                Serial.print("\nВведите новый wifi_password: ");
+
+                update.value = readString(0);
+                update.key = SETTING_TYPE::wifi_password;
+
+                if(std::get<uint32_t>(update.value) == 0)
+                    break;
+
+                xQueueSend(settingUpdateQueue, &update, portMAX_DELAY);
+                break;
+                case 4:
+                Serial.print("\nВведите новый sensor_delay: ");
+
+                update.value = readUInt32(validate_uint);
+                update.key = SETTING_TYPE::sensor_delay;
+
+                if(std::get<uint32_t>(update.value) == 0)
+                    break;
+
+                xQueueSend(settingUpdateQueue, &update, portMAX_DELAY);
+                break;
+                case 5:
+                Serial.print("\nВведите новый usb_delay: ");
+
+                update.value = readUInt32(validate_uint);
+                update.key = SETTING_TYPE::usb_delay;
+
+                if(std::get<uint32_t>(update.value) == 0)
+                    break;
+
+                xQueueSend(settingUpdateQueue, &update, portMAX_DELAY);
+                break;
+                case 6:
+                Serial.print("\nВведите новый wireless_delay: ");
+
+                update.value = readUInt32(validate_uint);
+                update.key = SETTING_TYPE::wireless_delay;
+
+                if(std::get<uint32_t>(update.value) == 0)
+                    break;
+
+                xQueueSend(settingUpdateQueue, &update, portMAX_DELAY);
+                break;
+                case 7:
+                Serial.print("\nВведите новый display_time: ");
+
+                update.value = readUInt32(validate_uint);
+                update.key = SETTING_TYPE::display_time;
 
                 if(std::get<uint32_t>(update.value) == 0)
                     break;
