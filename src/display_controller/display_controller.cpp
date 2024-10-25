@@ -20,12 +20,11 @@ void DisplayController::displayTask(void *pvParameters) {
 	//digitalWrite(OLED_PWR_PIN, LOW);
 
 	while(true) {
-		if(!digitalRead(BUTTONS_PIN))
+		if(!digitalRead(BUTTONS_PIN)) // Сейчас горит всегда
 		{
 			if(!display_enabled) {
-				//digitalWrite(OLED_PWR_PIN, HIGH);
+				//digitalWrite(OLED_PWR_PIN, HIGH);				
 				display_enabled = true;
-				//vTaskDelay(100);
 			}
 
 			for(int i = 0; i < (settings.display_time/display_frequency); i++)
@@ -41,7 +40,7 @@ void DisplayController::displayTask(void *pvParameters) {
 			}
 		} else {
 			oled.clearDisplay();
-			//digitalWrite(OLED_PWR_PIN, LOW);
+			// digitalWrite(OLED_PWR_PIN, LOW);
 			display_enabled = false;
 		}
 
