@@ -1,6 +1,9 @@
 #include "sensor_controller/sensor_controller.hpp"
 
 void SensorController::sensorTask(void *pvParameters) {
+	
+	SemaphoreHandle_t wireMutex = static_cast<SemaphoreHandle_t>(pvParameters);
+
 	INA226 INA = INA226(0x40);
 
     raw_data = new INA226Data(&settings.battery_id);
@@ -11,7 +14,12 @@ void SensorController::sensorTask(void *pvParameters) {
 		INA.setMaxCurrentShunt(60, 0.00125, false);
 
 	while(true) {
-		raw_data->readData(&INA);
+		if (xSemaphoreTake(wireMutex, portMAX_DELAY) == pdTRUE)
+		{
+			raw_data->readData(&INA);
+
+			xSemaphoreGive(wireMutex);
+		}
 
 		vTaskDelay(settings.sensor_delay);
 	}

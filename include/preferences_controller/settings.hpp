@@ -39,6 +39,13 @@ if(SETTING_TYPES[UPDATE_QUEUE.key] == #TYPE) \
     continue; \
 }
 
+#define DECLARE_PUT_DEFAULT_ITER(TYPE, F1, F2, PREFERENCES_OBJ, BUFFER_POINTER, SETTING_POINTER) \
+if(SETTING_TYPES[i] == #TYPE) \
+{ \
+    BUFFER_POINTER = std::get<TYPE*>(SETTING_POINTER); \
+    PREFERENCES_OBJ.F2(SETTING_NAMES[i], *(TYPE*)BUFFER_POINTER); \
+    continue; \
+}
 
 #define GEN_READ_SETTINGS_CYCLE(PREFERENCES_OBJ, BUFFER_POINTER, SETTING_POINTER, TYPES) \
 for (unsigned short i = 0; i < SETTING_TYPE::SETTINGS_COUNT; i++) { \
@@ -48,7 +55,14 @@ for (unsigned short i = 0; i < SETTING_TYPE::SETTINGS_COUNT; i++) { \
 
 #define GEN_UPDATE_ITER(PREFERENCES_OBJ, BUFFER_POINTER, SETTING_POINTER, UPDATE_QUEUE, TYPES) \
 SETTING_POINTER = getSettingFieldPointer(UPDATE_QUEUE.key); \
-TYPES(DECLARE_UPDATE_ITER, PREFERENCES_OBJ, BUFFER_POINTER, SETTING_POINTER, UPDATE_QUEUE) \
+TYPES(DECLARE_UPDATE_ITER, PREFERENCES_OBJ, BUFFER_POINTER, SETTING_POINTER, UPDATE_QUEUE)
+
+#define GEN_PUTS_DEFAULT(PREFERENCES_OBJ, BUFFER_POINTER, SETTING_POINTER, TYPES) \
+for (unsigned short i = 0; i < SETTING_TYPE::SETTINGS_COUNT; i++) { \
+    SETTING_POINTER = getSettingFieldPointer(i); \
+    TYPES(DECLARE_PUT_DEFAULT_ITER, PREFERENCES_OBJ, BUFFER_POINTER, SETTING_POINTER) \
+}
+
 
 #define UNIQUE_SETTINGS_TYPES(TYPE_F1_F2, ...) \
     TYPE_F1_F2(String, getString, putString, __VA_ARGS__ ) \
@@ -59,12 +73,12 @@ TYPES(DECLARE_UPDATE_ITER, PREFERENCES_OBJ, BUFFER_POINTER, SETTING_POINTER, UPD
 
 
 // Макрос для определения полей с указанием типа
-#define DECLARE_SETTINGS_FIELD(TYPE, NAME) TYPE NAME;
-#define REMOVE_TYPE(TYPE, NAME) NAME,
-#define REMOVE_TYPE_STR(TYPE, NAME) #NAME,
-#define REMOVE_TYPE_INDEX(TYPE, NAME) #TYPE,
+#define DECLARE_SETTINGS_FIELD(TYPE, NAME, ...) TYPE NAME;
+#define REMOVE_TYPE(TYPE, NAME, ...) NAME,
+#define REMOVE_TYPE_STR(TYPE, NAME, ...) #NAME,
+#define REMOVE_TYPE_INDEX(TYPE, NAME, ...) #TYPE,
 
-#define DECLARE_SWITCH_CASE(TYPE, NAME) \
+#define DECLARE_SWITCH_CASE(TYPE, NAME, ...) \
     case SETTING_TYPE::NAME: return &settings.NAME;
 
 // Определяем структуру и генерируем enum
@@ -91,14 +105,15 @@ TYPES(DECLARE_UPDATE_ITER, PREFERENCES_OBJ, BUFFER_POINTER, SETTING_POINTER, UPD
     }
 
 // Определяем поля структуры с указанием типа и названия настройки
-#define SETTINGS_FIELDS(TYPE_AND_NAME) \
-    TYPE_AND_NAME(String, access_key) \
-    TYPE_AND_NAME(uint32_t, sensor_delay) \
-    TYPE_AND_NAME(uint32_t, usb_delay) \
-    TYPE_AND_NAME(uint32_t, wireless_delay) \
-    TYPE_AND_NAME(String, wifi_ssid) \
-    TYPE_AND_NAME(String, wifi_password) \
-    TYPE_AND_NAME(uint32_t, battery_id) 
+#define SETTINGS_FIELDS(TYPE_AND_NAME, ...) \
+    TYPE_AND_NAME(String, access_key, __VA_ARGS__) \
+    TYPE_AND_NAME(uint32_t, sensor_delay, __VA_ARGS__) \
+    TYPE_AND_NAME(uint32_t, usb_delay, __VA_ARGS__) \
+    TYPE_AND_NAME(uint32_t, wireless_delay, __VA_ARGS__) \
+    TYPE_AND_NAME(uint32_t, display_time, __VA_ARGS__) \
+    TYPE_AND_NAME(String, wifi_ssid, __VA_ARGS__) \
+    TYPE_AND_NAME(String, wifi_password, __VA_ARGS__) \
+    TYPE_AND_NAME(uint32_t, battery_id, __VA_ARGS__) 
 
 // Генерируем структуру и enum
 GEN_SETTINGS(SETTINGS, SETTINGS_FIELDS)

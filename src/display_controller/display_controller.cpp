@@ -1,40 +1,51 @@
 #include "display_controller/display_controller.hpp"
 
 void DisplayController::displayTask(void *pvParameters) {
+
+	SemaphoreHandle_t wireMutex = static_cast<SemaphoreHandle_t>(pvParameters);
+
 	U8G2_SSD1306_64X32_1F_F_HW_I2C oled = U8G2_SSD1306_64X32_1F_F_HW_I2C(U8G2_R0, U8X8_PIN_NONE, OLED_SCL, OLED_SDA);
 
 	bool display_enabled = false;
     const int display_frequency = 200;
 
 	pinMode(OLED_PWR_PIN, OUTPUT);
-	pinMode(BUTTONS_PIN, INPUT_PULLDOWN);
+	pinMode(BUTTONS_PIN, INPUT);
 	pinMode(BUZZER_PIN, OUTPUT);
 
 	digitalWrite(OLED_PWR_PIN, HIGH);
 	vTaskDelay(100);
 	oled.begin();
 	vTaskDelay(100);
-	digitalWrite(OLED_PWR_PIN, LOW);
+	//digitalWrite(OLED_PWR_PIN, LOW);
 
 	while(true) {
 		if(!digitalRead(BUTTONS_PIN))
 		{
 			if(!display_enabled) {
-				digitalWrite(OLED_PWR_PIN, HIGH);
+				//digitalWrite(OLED_PWR_PIN, HIGH);
 				display_enabled = true;
-				vTaskDelay(100);
+				//vTaskDelay(100);
 			}
 
-			for(int i = 0; i < (5000/display_frequency); i++)
+			for(int i = 0; i < (settings.display_time/display_frequency); i++)
 			{
-				DisplayController::printStatus(&oled, *raw_data);
+				if (xSemaphoreTake(wireMutex, portMAX_DELAY) == pdTRUE)
+				{
+					DisplayController::printStatus(&oled, *raw_data);
+
+					xSemaphoreGive(wireMutex);
+				}
+				
 				vTaskDelay(display_frequency);
 			}
 		} else {
 			oled.clearDisplay();
-			digitalWrite(OLED_PWR_PIN, LOW);
+			//digitalWrite(OLED_PWR_PIN, LOW);
 			display_enabled = false;
 		}
+
+		vTaskDelay(100);
 	}
 }
 

@@ -5,6 +5,7 @@ void UsbController::clearInputBuffer() {
     while (Serial.available())
         Serial.read();
 }
+
 int UsbController::inputRead(){
     String str;
     while(1){
@@ -15,6 +16,7 @@ int UsbController::inputRead(){
         else{Serial.print(a);}}
     return str.toInt();
 }
+
 void UsbController::com_menu() {
 	clearInputBuffer();
 
@@ -63,7 +65,6 @@ void UsbController::settings_menu() {
                 update.key = SETTING_TYPE::battery_id;
 
                 xQueueSend(settingUpdateQueue, &update, portMAX_DELAY);
-                vTaskDelay(10);
                 break;
             default:
                 clearInputBuffer();
