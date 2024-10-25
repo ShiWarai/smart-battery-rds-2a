@@ -6,15 +6,82 @@ void UsbController::clearInputBuffer() {
         Serial.read();
 }
 
-int UsbController::inputRead(){
+String UsbController::readInput() {
     String str;
-    while(1){
-        while (!Serial.available()); // Ожидание ввода
-        char a = Serial.read();
-        str+=a;
-        if((int)a==13) break;
-        else{Serial.print(a);}}
-    return str.toInt();
+    char c;
+
+    while (1)
+    {
+        while (!Serial.available()) vTaskDelay(1); // Ожидание ввода
+
+        c = Serial.read();
+        
+        if (c == '\r')
+            break;
+        else
+            Serial.print(c);
+
+        str += c;
+    }
+
+    return str;
+}
+
+String UsbController::readString(error_t validate(String)) {
+    String str = readInput();
+
+    error_t error;
+    if(error = validate(str) == 0) {
+        return str;
+    } else {
+        Serial.println("Error type: " + String(error));
+        return "";
+    }
+}
+
+uint32_t UsbController::readUInt32(error_t validate(String)) {
+    String str = readInput();
+
+    error_t error;
+    if(error = validate(str) == 0) {
+        return str.toInt();
+    } else {
+        Serial.println("Error type: " + String(error));
+        return 0;
+    }
+}
+
+float UsbController::readFloat(error_t validate(String)) {
+    String str = readInput();
+
+    error_t error;
+    if(error = validate(str) == 0) {
+        return str.toFloat();
+    } else {
+        Serial.println("\nError type: " + String(error));
+        return 0;
+    }
+}
+
+error_t validate_id(String str) {
+    int id = str.toInt();
+
+    if(id > 0 && id < 256)
+        return 0;
+    else
+        return 1;
+}
+
+error_t validate_uint(String str) {
+    int id = str.toInt();
+
+    if(id >= 0)
+        if(id == 0 && !str.equals("0")) // На случай, если парсинг неудачный
+            return 2;
+        else
+            return 0;
+    else
+        return 1; // Число со знаком
 }
 
 void UsbController::com_menu() {
@@ -29,9 +96,9 @@ void UsbController::com_menu() {
         Serial.println("0) Выйти");
         
         
-        switch (inputRead()) {
+        switch (readUInt32(validate_uint)) {
             case 1:
-                settings_menu();
+                settingsMenu();
                 break;
             case 2:
 				nvs_flash_erase();
@@ -45,7 +112,7 @@ void UsbController::com_menu() {
     }
 }
 
-void UsbController::settings_menu() {
+void UsbController::settingsMenu() {
     int setting_choice;
     DECLARE_SETTING_TYPES_VARIANT(UNIQUE_SETTINGS_TYPES) buffer;
 
@@ -57,12 +124,15 @@ void UsbController::settings_menu() {
         Serial.println("1) ID");
         Serial.println("0) Назад");
         
-        switch (inputRead()) {
+        switch (readUInt32(validate_uint)) {
             case 1:
                 Serial.print("\nВведите новый ID: ");
 
-                update.value = (uint32_t)inputRead();
+                update.value = readUInt32(validate_id);
                 update.key = SETTING_TYPE::battery_id;
+
+                if(std::get<uint32_t>(update.value) == 0)
+                    break;
 
                 xQueueSend(settingUpdateQueue, &update, portMAX_DELAY);
                 break;

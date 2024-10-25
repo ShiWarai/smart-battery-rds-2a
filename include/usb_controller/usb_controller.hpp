@@ -12,6 +12,10 @@ public:
 private:
     static void clearInputBuffer();
     static void com_menu();
-    static void settings_menu();
-    static int inputRead();
+    static void settingsMenu();
+
+    static String readInput();
+    static String readString(error_t (String));
+    static uint32_t readUInt32(error_t (String));
+    static float readFloat(error_t (String));
 };
