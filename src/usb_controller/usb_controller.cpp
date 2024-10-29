@@ -147,8 +147,6 @@ void UsbController::settingsMenu() {
         Serial.println("\n\nМеню\\Настройки:");
         DECLARE_SETTING_TYPES_LINKS_VARIANT(UNIQUE_SETTINGS_TYPES) setting_field;
         GEN_SETTINGS_OUTPUT_DEFAULT(setting_field, UNIQUE_SETTINGS_TYPES)
-
-
         
         // Serial.print("1) ID             =");Serial.println(settings.battery_id);
         // Serial.print("2) wifi_ssid      =");Serial.println(settings.wifi_ssid);
