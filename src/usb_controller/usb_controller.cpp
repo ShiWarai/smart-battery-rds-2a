@@ -1,6 +1,22 @@
 #include "usb_controller/usb_controller.hpp"
 
 
+#define DECLARE_SERIAL_PRINT_ITER(TYPE, F1, F2, SETTING_POINTER) \
+if(SETTING_TYPES[i] == #TYPE) \
+{ \
+    Serial.print(SETTING_NAMES[i]); \
+    Serial.print("\r\t\t\t="); \
+    Serial.print(*(std::get<TYPE*>(SETTING_POINTER))); \
+}
+
+#define GEN_SETTINGS_OUTPUT_DEFAULT(SETTING_POINTER, TYPES) \
+for (unsigned short i = 0; i < SETTING_TYPE::SETTINGS_COUNT; i++) { \
+    SETTING_POINTER = getSettingFieldPointer(i); \
+    Serial.print(String(i+1)+") "); \
+    TYPES(DECLARE_SERIAL_PRINT_ITER, SETTING_POINTER) \
+    Serial.println(); \
+}
+
 void UsbController::clearInputBuffer() {
     while (Serial.available())
         Serial.read();
@@ -129,13 +145,18 @@ void UsbController::settingsMenu() {
     while (true) {
         // Вывод меню настроек
         Serial.println("\n\nМеню\\Настройки:");
-        Serial.print("1) ID             =");Serial.println(settings.battery_id);
-        Serial.print("2) wifi_ssid      =");Serial.println(settings.wifi_ssid);
-        Serial.print("3) wifi_password  =");Serial.println(settings.wifi_password);
-        Serial.print("4) sensor_delay   =");Serial.println(settings.sensor_delay);
-        Serial.print("5) usb_delay      =");Serial.println(settings.usb_delay);
-        Serial.print("6) wireless_delay =");Serial.println(settings.wireless_delay);
-        Serial.print("7) display_time   =");Serial.println(settings.display_time);
+        DECLARE_SETTING_TYPES_LINKS_VARIANT(UNIQUE_SETTINGS_TYPES) setting_field;
+        GEN_SETTINGS_OUTPUT_DEFAULT(setting_field, UNIQUE_SETTINGS_TYPES)
+
+
+        
+        // Serial.print("1) ID             =");Serial.println(settings.battery_id);
+        // Serial.print("2) wifi_ssid      =");Serial.println(settings.wifi_ssid);
+        // Serial.print("3) wifi_password  =");Serial.println(settings.wifi_password);
+        // Serial.print("4) sensor_delay   =");Serial.println(settings.sensor_delay);
+        // Serial.print("5) usb_delay      =");Serial.println(settings.usb_delay);
+        // Serial.print("6) wireless_delay =");Serial.println(settings.wireless_delay);
+        // Serial.print("7) display_time   =");Serial.println(settings.display_time);
         Serial.println("0) Назад");
         
         switch (readUInt32(validate_uint)) {
@@ -150,7 +171,7 @@ void UsbController::settingsMenu() {
 
                 xQueueSend(settingUpdateQueue, &update, portMAX_DELAY);
                 break;
-                case 2:
+            case 2:
                 Serial.print("\nВведите новый wifi_ssid: ");
 
                 update.value = readString(0);
@@ -161,7 +182,7 @@ void UsbController::settingsMenu() {
 
                 xQueueSend(settingUpdateQueue, &update, portMAX_DELAY);
                 break;
-                case 3:
+            case 3:
                 Serial.print("\nВведите новый wifi_password: ");
 
                 update.value = readString(0);
@@ -172,7 +193,7 @@ void UsbController::settingsMenu() {
 
                 xQueueSend(settingUpdateQueue, &update, portMAX_DELAY);
                 break;
-                case 4:
+            case 4:
                 Serial.print("\nВведите новый sensor_delay: ");
 
                 update.value = readUInt32(validate_uint);
@@ -183,7 +204,7 @@ void UsbController::settingsMenu() {
 
                 xQueueSend(settingUpdateQueue, &update, portMAX_DELAY);
                 break;
-                case 5:
+            case 5:
                 Serial.print("\nВведите новый usb_delay: ");
 
                 update.value = readUInt32(validate_uint);
@@ -194,7 +215,7 @@ void UsbController::settingsMenu() {
 
                 xQueueSend(settingUpdateQueue, &update, portMAX_DELAY);
                 break;
-                case 6:
+            case 6:
                 Serial.print("\nВведите новый wireless_delay: ");
 
                 update.value = readUInt32(validate_uint);
@@ -205,7 +226,7 @@ void UsbController::settingsMenu() {
 
                 xQueueSend(settingUpdateQueue, &update, portMAX_DELAY);
                 break;
-                case 7:
+            case 7:
                 Serial.print("\nВведите новый display_time: ");
 
                 update.value = readUInt32(validate_uint);
