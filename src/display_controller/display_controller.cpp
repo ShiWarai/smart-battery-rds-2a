@@ -14,16 +14,22 @@ void DisplayController::displayTask(void *pvParameters) {
 	pinMode(BUZZER_PIN, OUTPUT);
 
 	digitalWrite(OLED_PWR_PIN, HIGH);
-	vTaskDelay(100);
 	oled.begin();
-	vTaskDelay(100);
-	//digitalWrite(OLED_PWR_PIN, LOW);
+	digitalWrite(OLED_PWR_PIN, LOW);
 
 	while(true) {
 		if(!digitalRead(BUTTONS_PIN)) // Сейчас горит всегда
 		{
 			if(!display_enabled) {
-				//digitalWrite(OLED_PWR_PIN, HIGH);				
+				digitalWrite(OLED_PWR_PIN, HIGH);
+				if (xSemaphoreTake(wireMutex, portMAX_DELAY) == pdTRUE) // Забираем управление I2C и делаем перезапуск датчика
+				{
+					Wire.end();
+					oled.begin();
+
+					xSemaphoreGive(wireMutex);
+					vTaskDelay(1);
+				}
 				display_enabled = true;
 			}
 
@@ -32,15 +38,14 @@ void DisplayController::displayTask(void *pvParameters) {
 				if (xSemaphoreTake(wireMutex, portMAX_DELAY) == pdTRUE)
 				{
 					DisplayController::printStatus(&oled, *raw_data);
-
+					
 					xSemaphoreGive(wireMutex);
+					vTaskDelay(display_frequency);
 				}
-				
-				vTaskDelay(display_frequency);
 			}
-		} else {
+		} else if (display_enabled) {
 			oled.clearDisplay();
-			// digitalWrite(OLED_PWR_PIN, LOW);
+			digitalWrite(OLED_PWR_PIN, LOW);
 			display_enabled = false;
 		}
 
