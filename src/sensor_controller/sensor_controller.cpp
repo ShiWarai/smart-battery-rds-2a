@@ -11,7 +11,7 @@ void SensorController::sensorTask(void *pvParameters) {
 	if (!INA.begin() && Serial.isConnected())
 		Serial.println("it was not possible to connect to the voltampermeter. Fix the error");
 	else
-		INA.setMaxCurrentShunt(60, 0.00125, false);
+		INA.setMaxCurrentShunt(60, 0.00125, true);
 
 	while(true) {
 		if (xSemaphoreTake(wireMutex, portMAX_DELAY) == pdTRUE)

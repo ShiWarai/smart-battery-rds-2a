@@ -15,6 +15,7 @@ void PreferencesController::preferencesTask(void *pvParameters) {
 	settings.usb_delay = 1000 / portTICK_PERIOD_MS;
 	settings.sensor_delay = 1000 / portTICK_PERIOD_MS;
 	settings.display_time = 10000 / portTICK_PERIOD_MS;
+	settings.mode = 0;
 	settings.access_key = DEFAULT_ACCESS_KEY;
 
 	DECLARE_SETTING_TYPES_LINKS_VARIANT(UNIQUE_SETTINGS_TYPES) setting;

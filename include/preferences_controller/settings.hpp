@@ -64,14 +64,6 @@ for (unsigned short i = 0; i < SETTING_TYPE::SETTINGS_COUNT; i++) { \
 }
 
 
-#define UNIQUE_SETTINGS_TYPES(TYPE_F1_F2, ...) \
-    TYPE_F1_F2(String, getString, putString, __VA_ARGS__ ) \
-    TYPE_F1_F2(float, getFloat, putFloat, __VA_ARGS__ ) \
-    TYPE_F1_F2(uint32_t, getUInt, putUInt, __VA_ARGS__ )
-
-
-
-
 // Макрос для определения полей с указанием типа
 #define DECLARE_SETTINGS_FIELD(TYPE, NAME, ...) TYPE NAME;
 #define REMOVE_TYPE(TYPE, NAME, ...) NAME,
@@ -104,7 +96,13 @@ for (unsigned short i = 0; i < SETTING_TYPE::SETTINGS_COUNT; i++) { \
         } \
     }
 
-// Определяем поля структуры с указанием типа и названия настройки
+// Определеяем обработчики разных типов настроек (тип, функция получения параметра, функция записи параметра)
+#define UNIQUE_SETTINGS_TYPES(TYPE_F1_F2, ...) \
+    TYPE_F1_F2(String, getString, putString, __VA_ARGS__ ) \
+    TYPE_F1_F2(float, getFloat, putFloat, __VA_ARGS__ ) \
+    TYPE_F1_F2(uint32_t, getUInt, putUInt, __VA_ARGS__ )
+
+// Определяем поля структуры (тип, название настройки)
 #define SETTINGS_FIELDS(TYPE_AND_NAME, ...) \
     TYPE_AND_NAME(String, access_key, __VA_ARGS__) \
     TYPE_AND_NAME(uint32_t, sensor_delay, __VA_ARGS__) \
@@ -113,10 +111,16 @@ for (unsigned short i = 0; i < SETTING_TYPE::SETTINGS_COUNT; i++) { \
     TYPE_AND_NAME(uint32_t, display_time, __VA_ARGS__) \
     TYPE_AND_NAME(String, wifi_ssid, __VA_ARGS__) \
     TYPE_AND_NAME(String, wifi_password, __VA_ARGS__) \
+    TYPE_AND_NAME(uint32_t, mode, __VA_ARGS__) \
     TYPE_AND_NAME(uint32_t, battery_id, __VA_ARGS__) 
 
 // Генерируем структуру и enum
 GEN_SETTINGS(SETTINGS, SETTINGS_FIELDS)
+
+enum BATTERY_MODS {
+    POWERSAVE,
+    FULL
+};
 
 typedef struct {
     SETTING_TYPE key;

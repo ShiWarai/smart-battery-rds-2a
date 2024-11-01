@@ -17,40 +17,66 @@ void DisplayController::displayTask(void *pvParameters) {
 	oled.begin();
 	digitalWrite(OLED_PWR_PIN, LOW);
 
-	while(true) {
-		if(!digitalRead(BUTTONS_PIN)) // Сейчас горит всегда
-		{
-			if(!display_enabled) {
-				digitalWrite(OLED_PWR_PIN, HIGH);
-				if (xSemaphoreTake(wireMutex, portMAX_DELAY) == pdTRUE) // Забираем управление I2C и делаем перезапуск датчика
-				{
-					Wire.end();
-					oled.begin();
-
-					xSemaphoreGive(wireMutex);
-					vTaskDelay(1);
-				}
-				display_enabled = true;
-			}
-
-			for(int i = 0; i < (settings.display_time/display_frequency); i++)
+	switch(settings.mode)
+	{
+	case BATTERY_MODS::POWERSAVE:
+		while(true) {
+			if(!digitalRead(BUTTONS_PIN)) // Сейчас горит всегда
 			{
-				if (xSemaphoreTake(wireMutex, portMAX_DELAY) == pdTRUE)
-				{
-					DisplayController::printStatus(&oled, *raw_data);
-					
-					xSemaphoreGive(wireMutex);
-					vTaskDelay(display_frequency);
-				}
-			}
-		} else if (display_enabled) {
-			oled.clearDisplay();
-			digitalWrite(OLED_PWR_PIN, LOW);
-			display_enabled = false;
-		}
+				if(!display_enabled) {
+					digitalWrite(OLED_PWR_PIN, HIGH);
+					if (xSemaphoreTake(wireMutex, portMAX_DELAY) == pdTRUE) // Забираем управление I2C и делаем перезапуск датчика
+					{
+						Wire.end();
+						oled.begin();
+						xSemaphoreGive(wireMutex);
 
-		vTaskDelay(100);
+						vTaskDelay(1);
+						
+						display_enabled = true;
+					}
+				}
+
+				for(int i = 0; i < (settings.display_time/display_frequency); i++)
+				{
+					if (xSemaphoreTake(wireMutex, portMAX_DELAY) == pdTRUE)
+					{
+						DisplayController::printStatus(&oled, *raw_data);
+						
+						xSemaphoreGive(wireMutex);
+						vTaskDelay(display_frequency);
+					}
+				}
+			} else if (display_enabled) {
+				oled.clearDisplay();
+				digitalWrite(OLED_PWR_PIN, LOW);
+				display_enabled = false;
+			}
+
+			vTaskDelay(100);
+		}
+	case BATTERY_MODS::FULL:
+		while(true) {
+			if (xSemaphoreTake(wireMutex, portMAX_DELAY) == pdTRUE)
+			{
+				DisplayController::printStatus(&oled, *raw_data);
+				
+				xSemaphoreGive(wireMutex);
+				vTaskDelay(display_frequency);
+			}
+		}
 	}
+}
+
+void DisplayController::turnOnDisplay(U8G2_SSD1306_64X32_1F_F_HW_I2C *oled) {
+	digitalWrite(OLED_PWR_PIN, HIGH);
+	Wire.end();
+	oled->begin();
+}
+
+void DisplayController::turnOffDisplay(U8G2_SSD1306_64X32_1F_F_HW_I2C *oled) {
+	oled->clearDisplay();
+	digitalWrite(OLED_PWR_PIN, LOW);	
 }
 
 void DisplayController::printStatus(U8G2_SSD1306_64X32_1F_F_HW_I2C *oled, INA226Data data, bool changeContrast, byte contrast) // routine for printing simple interface on an OLED display

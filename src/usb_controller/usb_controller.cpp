@@ -1,22 +1,5 @@
 #include "usb_controller/usb_controller.hpp"
 
-
-#define DECLARE_SERIAL_PRINT_ITER(TYPE, F1, F2, SETTING_POINTER) \
-if(SETTING_TYPES[i] == #TYPE) \
-{ \
-    Serial.print(SETTING_NAMES[i]); \
-    Serial.print("\r\t\t\t="); \
-    Serial.print(*(std::get<TYPE*>(SETTING_POINTER))); \
-}
-
-#define GEN_SETTINGS_OUTPUT_DEFAULT(SETTING_POINTER, TYPES) \
-for (unsigned short i = 0; i < SETTING_TYPE::SETTINGS_COUNT; i++) { \
-    SETTING_POINTER = getSettingFieldPointer(i); \
-    Serial.print(String(i+1)+") "); \
-    TYPES(DECLARE_SERIAL_PRINT_ITER, SETTING_POINTER) \
-    Serial.println(); \
-}
-
 void UsbController::clearInputBuffer() {
     while (Serial.available())
         Serial.read();
@@ -43,42 +26,6 @@ String UsbController::readInput() {
     return str;
 }
 
-String UsbController::readString(error_t validate(String)) {
-    String str = readInput();
-
-    error_t error;
-    if(error = validate(str) == 0) {
-        return str;
-    } else {
-        Serial.println("Error type: " + String(error));
-        return "";
-    }
-}
-
-uint32_t UsbController::readUInt32(error_t validate(String)) {
-    String str = readInput();
-
-    error_t error;
-    if(error = validate(str) == 0) {
-        return str.toInt();
-    } else {
-        Serial.println("Error type: " + String(error));
-        return 0;
-    }
-}
-
-float UsbController::readFloat(error_t validate(String)) {
-    String str = readInput();
-
-    error_t error;
-    if(error = validate(str) == 0) {
-        return str.toFloat();
-    } else {
-        Serial.println("\nError type: " + String(error));
-        return 0;
-    }
-}
-
 error_t validate_id(String str) {
     int id = str.toInt();
 
@@ -100,10 +47,70 @@ error_t validate_uint(String str) {
         return 1; // Число со знаком
 }
 
+error_t UsbController::read_String(String *str, error_t validator(String) = nullptr) {
+    String buffer = readInput();
+
+    if(validator != nullptr)
+    {
+        error_t error;
+        if(error = validator(buffer) == 0) {
+            *str = buffer;
+            return error;
+        } else {
+            Serial.println("Error type: " + String(error));
+            return error;
+        }
+    } else {
+        *str = buffer;
+        return 0;
+    }
+}
+
+error_t UsbController::read_uint32_t(uint32_t *num, error_t validator(String) = nullptr) {
+    String buffer = readInput();
+
+    if(validator != nullptr)
+    {
+        error_t error;
+        if(error = validator(buffer) == 0) {
+            *num = buffer.toInt();
+            return error;
+        } else {
+            Serial.println("Error type: " + String(error));
+            return error;
+        }
+    } else {
+        *num = buffer.toInt();
+        return 0;
+    }
+}
+
+error_t UsbController::read_float(float *num, error_t validator(String) = nullptr) {
+    String buffer = readInput();
+
+    if(validator != nullptr)
+    {
+        error_t error;
+        if(error = validator(buffer) == 0) {
+            *num = buffer.toFloat();
+            return error;
+        } else {
+            Serial.println("Error type: " + String(error));
+            return error;
+        }
+    } else 
+    {
+        *num = buffer.toInt();
+        return 0;
+    }
+}
+
+
+
 void UsbController::com_menu() {
 	clearInputBuffer();
 
-    
+    uint32_t buffer_num;
     while (true) {
         // Вывод меню
         Serial.println("\n\nМеню:");
@@ -112,8 +119,8 @@ void UsbController::com_menu() {
         Serial.println("3) Сброс");
         Serial.println("0) Выйти");
         
-        
-        switch (readUInt32(validate_uint)) {
+        read_uint32_t(&buffer_num);
+        switch (buffer_num) {
             case 1:
                 settingsMenu();
                 break;
@@ -136,105 +143,56 @@ void UsbController::test(){//тестирование работы всех си
 
 }
 
+#define GENERATE_SERIAL_INPUT_CASE(TYPE, NAME, BUFFER, UPDATE_QUEUE, UPDATE) \
+case NAME: \
+    Serial.printf("\nВведите новый %s: ", SETTING_NAMES[NAME]);\
+    if(read_##TYPE(&BUFFER) != 0) { \
+        Serial.println("Ошибка ввода"); \
+        break; \
+    } \
+    update.value = BUFFER; \
+    update.key = NAME; \
+    xQueueSend(UPDATE_QUEUE, &UPDATE, portMAX_DELAY); \
+    vTaskDelay(100); \
+    break;
+
 void UsbController::settingsMenu() {
-    int setting_choice;
+    uint32_t buffer_uint32_t;
+    float buffer_float;
+    String buffer_String;
+
     DECLARE_SETTING_TYPES_VARIANT(UNIQUE_SETTINGS_TYPES) buffer;
+    DECLARE_SETTING_TYPES_LINKS_VARIANT(UNIQUE_SETTINGS_TYPES) setting_field;
 
 	SettingUpdate update;
 
     while (true) {
         // Вывод меню настроек
         Serial.println("\n\nМеню\\Настройки:");
-        DECLARE_SETTING_TYPES_LINKS_VARIANT(UNIQUE_SETTINGS_TYPES) setting_field;
+
         GEN_SETTINGS_OUTPUT_DEFAULT(setting_field, UNIQUE_SETTINGS_TYPES)
-        
-        // Serial.print("1) ID             =");Serial.println(settings.battery_id);
-        // Serial.print("2) wifi_ssid      =");Serial.println(settings.wifi_ssid);
-        // Serial.print("3) wifi_password  =");Serial.println(settings.wifi_password);
-        // Serial.print("4) sensor_delay   =");Serial.println(settings.sensor_delay);
-        // Serial.print("5) usb_delay      =");Serial.println(settings.usb_delay);
-        // Serial.print("6) wireless_delay =");Serial.println(settings.wireless_delay);
-        // Serial.print("7) display_time   =");Serial.println(settings.display_time);
         Serial.println("0) Назад");
         
-        switch (readUInt32(validate_uint)) {
-            case 1:
-                Serial.print("\nВведите новый ID: ");
+        read_uint32_t(&buffer_uint32_t);
+        switch (buffer_uint32_t-1) {
+            case SETTING_TYPE::mode:
+                Serial.printf("\nВведите новый %s: ", SETTING_NAMES[SETTING_TYPE::mode]);
 
-                update.value = readUInt32(validate_id);
-                update.key = SETTING_TYPE::battery_id;
-
-                if(std::get<uint32_t>(update.value) == 0)
+                if(read_uint32_t(&buffer_uint32_t) != 0) {
+                    Serial.println("Ошибка ввода");
                     break;
+                }
 
-                xQueueSend(settingUpdateQueue, &update, portMAX_DELAY);
+                update.value = buffer_uint32_t;
+                update.key = SETTING_TYPE::mode;
+
+                xQueueSend(settingUpdateQueue, &update, portMAX_DELAY); 
+                vTaskDelay(1000);
+                ESP.restart();
+
                 break;
-            case 2:
-                Serial.print("\nВведите новый wifi_ssid: ");
-
-                update.value = readString(0);
-                update.key = SETTING_TYPE::wifi_ssid;
-
-                if(std::get<uint32_t>(update.value) == 0)
-                    break;
-
-                xQueueSend(settingUpdateQueue, &update, portMAX_DELAY);
-                break;
-            case 3:
-                Serial.print("\nВведите новый wifi_password: ");
-
-                update.value = readString(0);
-                update.key = SETTING_TYPE::wifi_password;
-
-                if(std::get<uint32_t>(update.value) == 0)
-                    break;
-
-                xQueueSend(settingUpdateQueue, &update, portMAX_DELAY);
-                break;
-            case 4:
-                Serial.print("\nВведите новый sensor_delay: ");
-
-                update.value = readUInt32(validate_uint);
-                update.key = SETTING_TYPE::sensor_delay;
-
-                if(std::get<uint32_t>(update.value) == 0)
-                    break;
-
-                xQueueSend(settingUpdateQueue, &update, portMAX_DELAY);
-                break;
-            case 5:
-                Serial.print("\nВведите новый usb_delay: ");
-
-                update.value = readUInt32(validate_uint);
-                update.key = SETTING_TYPE::usb_delay;
-
-                if(std::get<uint32_t>(update.value) == 0)
-                    break;
-
-                xQueueSend(settingUpdateQueue, &update, portMAX_DELAY);
-                break;
-            case 6:
-                Serial.print("\nВведите новый wireless_delay: ");
-
-                update.value = readUInt32(validate_uint);
-                update.key = SETTING_TYPE::wireless_delay;
-
-                if(std::get<uint32_t>(update.value) == 0)
-                    break;
-
-                xQueueSend(settingUpdateQueue, &update, portMAX_DELAY);
-                break;
-            case 7:
-                Serial.print("\nВведите новый display_time: ");
-
-                update.value = readUInt32(validate_uint);
-                update.key = SETTING_TYPE::display_time;
-
-                if(std::get<uint32_t>(update.value) == 0)
-                    break;
-
-                xQueueSend(settingUpdateQueue, &update, portMAX_DELAY);
-                break;
+            // Генерируем типовые кейсы
+            GENERATE_SERIAL_INPUT_CASE(uint32_t, SETTING_TYPE::battery_id, buffer_uint32_t, settingUpdateQueue, update)
             default:
                 clearInputBuffer();
 				return;
