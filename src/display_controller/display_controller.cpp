@@ -24,13 +24,11 @@ void DisplayController::displayTask(void *pvParameters) {
 			if(!digitalRead(BUTTONS_PIN)) // Сейчас горит всегда
 			{
 				if(!display_enabled) {
-					digitalWrite(OLED_PWR_PIN, HIGH);
 					if (xSemaphoreTake(wireMutex, portMAX_DELAY) == pdTRUE) // Забираем управление I2C и делаем перезапуск датчика
 					{
-						Wire.end();
-						oled.begin();
-						xSemaphoreGive(wireMutex);
+						DisplayController::turnOnDisplay(&oled);
 
+						xSemaphoreGive(wireMutex);
 						vTaskDelay(1);
 						
 						display_enabled = true;
@@ -48,8 +46,7 @@ void DisplayController::displayTask(void *pvParameters) {
 					}
 				}
 			} else if (display_enabled) {
-				oled.clearDisplay();
-				digitalWrite(OLED_PWR_PIN, LOW);
+				DisplayController::turnOffDisplay(&oled);
 				display_enabled = false;
 			}
 
@@ -88,35 +85,44 @@ void DisplayController::printStatus(U8G2_SSD1306_64X32_1F_F_HW_I2C *oled, INA226
 	}
 
 	// obtain voltage from power monitor and prepare values
+	uint32_t id = *data.id;
 	double voltage = data.voltage;
-	double p = data.capacity;
-	String power = String(data.power,2);
-	power.trim();
+	double percentage = data.capacity;
+	double power = data.power;
 	
 	// create a string with formatted percentage value
-	String s;
-	s = String(p,0);
-	s.trim();
+	String buffer;
+
+	// рисуем номер аккумулятора
+	buffer = String("ID:") + String(id);
+	buffer.trim();
+	oled->setFont(u8g2_font_4x6_mr);
+	oled->drawStr(0, 6, buffer.c_str());
 
 	// display voltage based battery charge percentage, accounting for the number of digits
-	oled->setFont(u8g2_font_spleen16x32_mu); // set big font
-	if(s.length() == 1) {
-		oled->drawStr(34, 20, s.c_str());
-	} else if(s.length() == 2) {
-		oled->drawStr(18, 20, s.c_str());
+	buffer = String(percentage,0) + String("%");
+	buffer.trim();
+	oled->setFont(u8g2_font_spleen12x24_mu); // set big font
+	if(buffer.length() == 2) {
+		oled->drawStr(30, 16, buffer.c_str());
+	} else if(buffer.length() == 3) {
+		oled->drawStr(30, 16, buffer.c_str());
 	} else {
-		oled->drawStr(2, 20, s.c_str());
+		oled->drawStr(22, 16, buffer.c_str());
 	}
-	oled->drawStr(50, 20, "%");
 
 	// prepare a string with formatted voltage value
-	s = String(voltage,2);
+	buffer = String(voltage,2);
 	
 	// display true battery voltage and fake power value on the bottom
 	oled->setFont(u8g2_font_spleen6x12_mr); // set smaller font
-	oled->drawStr(0, 31, s.c_str());
+	buffer = String(voltage,2);
+	buffer.trim();
+	oled->drawStr(0, 31, buffer.c_str());
 	oled->drawStr(24, 31, "v");
-	oled->drawStr(33, 31, power.c_str());
+	buffer = String(power,2);
+	buffer.trim();
+	oled->drawStr(33, 31, buffer.c_str());
 	oled->drawStr(57, 31, "w");
 	
 	// send frame buffer to the display

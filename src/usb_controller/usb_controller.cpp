@@ -26,38 +26,17 @@ String UsbController::readInput() {
     return str;
 }
 
-error_t validate_id(String str) {
-    int id = str.toInt();
-
-    if(id > 0 && id < 256)
-        return 0;
-    else
-        return 1;
-}
-
-error_t validate_uint(String str) {
-    int id = str.toInt();
-
-    if(id >= 0)
-        if(id == 0 && !str.equals("0")) // На случай, если парсинг неудачный
-            return 2;
-        else
-            return 0;
-    else
-        return 1; // Число со знаком
-}
-
 error_t UsbController::read_String(String *str, error_t validator(String) = nullptr) {
     String buffer = readInput();
 
     if(validator != nullptr)
     {
-        error_t error;
-        if(error = validator(buffer) == 0) {
+        error_t error = validator(buffer);
+        if(error == 0) {
             *str = buffer;
             return error;
         } else {
-            Serial.println("Error type: " + String(error));
+            Serial.println("\r\nОшибка: " + String(error));
             return error;
         }
     } else {
@@ -71,12 +50,12 @@ error_t UsbController::read_uint32_t(uint32_t *num, error_t validator(String) = 
 
     if(validator != nullptr)
     {
-        error_t error;
-        if(error = validator(buffer) == 0) {
+        error_t error = validator(buffer);
+        if(error == 0) {
             *num = buffer.toInt();
             return error;
         } else {
-            Serial.println("Error type: " + String(error));
+            Serial.println("\r\nОшибка: " + String(error));
             return error;
         }
     } else {
@@ -90,12 +69,12 @@ error_t UsbController::read_float(float *num, error_t validator(String) = nullpt
 
     if(validator != nullptr)
     {
-        error_t error;
-        if(error = validator(buffer) == 0) {
+        error_t error = validator(buffer);
+        if(error == 0) {
             *num = buffer.toFloat();
             return error;
         } else {
-            Serial.println("Error type: " + String(error));
+            Serial.println("\r\nОшибка: " + String(error));
             return error;
         }
     } else 
@@ -105,15 +84,13 @@ error_t UsbController::read_float(float *num, error_t validator(String) = nullpt
     }
 }
 
-
-
 void UsbController::com_menu() {
 	clearInputBuffer();
 
     uint32_t buffer_num;
     while (true) {
         // Вывод меню
-        Serial.println("\n\nМеню:");
+        Serial.println("\r\nМеню:");
         Serial.println("1) Настройки");
         Serial.println("2) Тест");
         Serial.println("3) Сброс");
@@ -133,21 +110,23 @@ void UsbController::com_menu() {
                 ESP.restart(); // Перезапуск ESP32
                 break;
             default:
+                Serial.print("\r\n");
 				clearInputBuffer();
                 return;
         }
     }
 }
 
-void UsbController::test(){//тестирование работы всех систем(дисплей, пищалка, вольтамперметр(статистика в консоль), wi-fi(статистика в консоль))
+void UsbController::test() // тестирование работы всех систем(дисплей, пищалка, вольтамперметр(статистика в консоль), wi-fi(статистика в консоль))
+{
 
 }
 
-#define GENERATE_SERIAL_INPUT_CASE(TYPE, NAME, BUFFER, UPDATE_QUEUE, UPDATE) \
+#define GENERATE_SERIAL_INPUT_CASE(TYPE, NAME, VALIDATOR_FUNC, BUFFER, UPDATE_QUEUE, UPDATE) \
 case NAME: \
-    Serial.printf("\nВведите новый %s: ", SETTING_NAMES[NAME]);\
-    if(read_##TYPE(&BUFFER) != 0) { \
-        Serial.println("Ошибка ввода"); \
+    Serial.printf("\r\nВведите новый %s: ", SETTING_NAMES[NAME]);\
+    if(read_##TYPE(&BUFFER, VALIDATOR_FUNC) != 0) { \
+        Serial.println("\r\nОшибка ввода"); \
         break; \
     } \
     update.value = BUFFER; \
@@ -168,20 +147,27 @@ void UsbController::settingsMenu() {
 
     while (true) {
         // Вывод меню настроек
-        Serial.println("\n\nМеню\\Настройки:");
+        Serial.println("\r\nМеню\\Настройки:");
 
         GEN_SETTINGS_OUTPUT_DEFAULT(setting_field, UNIQUE_SETTINGS_TYPES)
-        Serial.println("0) Назад");
+        //Serial.println("0) Назад");
         
         read_uint32_t(&buffer_uint32_t);
         switch (buffer_uint32_t-1) {
+            // Генерируем типовые кейсы
+            GENERATE_SERIAL_INPUT_CASE(String, SETTING_TYPE::access_key, nullptr, buffer_String, settingUpdateQueue, update)
+            GENERATE_SERIAL_INPUT_CASE(uint32_t, SETTING_TYPE::sensor_delay, validate_uint, buffer_uint32_t, settingUpdateQueue, update)
+            GENERATE_SERIAL_INPUT_CASE(uint32_t, SETTING_TYPE::usb_delay, validate_uint, buffer_uint32_t, settingUpdateQueue, update)
+            GENERATE_SERIAL_INPUT_CASE(uint32_t, SETTING_TYPE::wireless_delay, validate_uint, buffer_uint32_t, settingUpdateQueue, update)
+            GENERATE_SERIAL_INPUT_CASE(uint32_t, SETTING_TYPE::display_time, validate_uint, buffer_uint32_t, settingUpdateQueue, update)
+            GENERATE_SERIAL_INPUT_CASE(String, SETTING_TYPE::wifi_ssid, nullptr, buffer_String, settingUpdateQueue, update)
+            GENERATE_SERIAL_INPUT_CASE(String, SETTING_TYPE::wifi_password, nullptr, buffer_String, settingUpdateQueue, update)
+            GENERATE_SERIAL_INPUT_CASE(uint32_t, SETTING_TYPE::battery_id, validate_id, buffer_uint32_t, settingUpdateQueue, update)
             case SETTING_TYPE::mode:
-                Serial.printf("\nВведите новый %s: ", SETTING_NAMES[SETTING_TYPE::mode]);
+                Serial.printf("\r\nВведите новый %s: ", SETTING_NAMES[SETTING_TYPE::mode]);
 
-                if(read_uint32_t(&buffer_uint32_t) != 0) {
-                    Serial.println("Ошибка ввода");
+                if(read_uint32_t(&buffer_uint32_t, validate_uint) != 0)
                     break;
-                }
 
                 update.value = buffer_uint32_t;
                 update.key = SETTING_TYPE::mode;
@@ -191,8 +177,6 @@ void UsbController::settingsMenu() {
                 ESP.restart();
 
                 break;
-            // Генерируем типовые кейсы
-            GENERATE_SERIAL_INPUT_CASE(uint32_t, SETTING_TYPE::battery_id, buffer_uint32_t, settingUpdateQueue, update)
             default:
                 clearInputBuffer();
 				return;
