@@ -4,9 +4,7 @@ void setup()
 {
 	SemaphoreHandle_t wireMutex = xSemaphoreCreateMutex();
 
-	#ifdef WITH_TEST
 	TestMode::test();
-	#endif
 
 	xTaskCreate(PreferencesController::preferencesTask, "Preferences task", 4096, NULL, 1, NULL);
 
