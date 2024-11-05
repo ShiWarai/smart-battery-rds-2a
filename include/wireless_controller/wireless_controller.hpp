@@ -2,6 +2,7 @@
 
 #include <WiFi.h>
 #include <ESPmDNS.h>
+#include <ESPAsyncWebServer.h>
 #include "preferences_controller/settings.hpp"
 #include "sensor_controller/INA226Data.hpp"
 
