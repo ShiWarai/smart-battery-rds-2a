@@ -8,7 +8,9 @@ void setup()
 
 	while(settings.battery_id == 0) // Ожидаем загрузки настроек в ОЗУ
 		vTaskDelay(100); 
-
+	#ifdef WITH_TEST
+	TestMode::test();
+	#endif
 	#ifdef WITH_DISPLAY
 	xTaskCreate(DisplayController::displayTask, "Display task", 4096, wireMutex, 1, NULL);
 	#endif

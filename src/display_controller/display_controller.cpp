@@ -124,6 +124,7 @@ void DisplayController::printStatus(U8G2_SSD1306_64X32_1F_F_HW_I2C *oled, INA226
 	buffer.trim();
 	oled->drawStr(33, 31, buffer.c_str());
 	oled->drawStr(57, 31, "w");
+	//if(WirelessController::wificonnect){oled->drawStr(0, 15, "wifi");}
 	
 	// send frame buffer to the display
 	oled->sendBuffer();

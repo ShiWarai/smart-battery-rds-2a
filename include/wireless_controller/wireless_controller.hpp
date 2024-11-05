@@ -9,4 +9,6 @@ class WirelessController
 {
 public:
     static void wirelessTask(void *pvParameters);
+    // static bool clientconnect;
+    // static bool wificonnect;
 };

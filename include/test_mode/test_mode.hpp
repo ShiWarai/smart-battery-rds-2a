@@ -1,5 +1,6 @@
 #pragma once
 
+#include <Arduino.h>
 // дисплей
 #include <U8g2lib.h>
 // INA
@@ -8,7 +9,9 @@
 #else
 #include "sensor_controller\INA226_wokwi.hpp"
 #endif
-// 
+// wi-fi
+#include <WiFi.h>
+#include <ESPmDNS.h>
 
 
 #include "preferences_controller/settings.hpp"
