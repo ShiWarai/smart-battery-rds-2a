@@ -9,6 +9,7 @@ String UsbController::readInput() {
     String str;
     char c;
 
+    clearInputBuffer();
     while (1)
     {
         while (!Serial.available()) vTaskDelay(1); // Ожидание ввода
@@ -33,6 +34,7 @@ error_t UsbController::read_String(String *str, error_t validator(String) = null
     {
         error_t error = validator(buffer);
         if(error == 0) {
+            buffer.trim();
             *str = buffer;
             return error;
         } else {
@@ -86,14 +88,15 @@ error_t UsbController::read_float(float *num, error_t validator(String) = nullpt
 
 void UsbController::com_menu() {
 	clearInputBuffer();
-
+    Preferences pref_test;
     uint32_t buffer_num;
     while (true) {
         // Вывод меню
         Serial.println("\r\nМеню:");
         Serial.println("1) Настройки");
         Serial.println("2) Тест");
-        Serial.println("3) Сброс");
+        Serial.println("3) Рестарт");
+        Serial.println("4) Сброс(очистка памяти + рестарт)");
         Serial.println("0) Выйти");
         
         read_uint32_t(&buffer_num);
@@ -102,9 +105,15 @@ void UsbController::com_menu() {
                 settingsMenu();
                 break;
             case 2:
-                settingsMenu();
+                pref_test.begin("testing", false);
+                pref_test.putBool("test_enabled", true);
+                pref_test.end();
+                ESP.restart(); // Перезапуск ESP32
                 break;
             case 3:
+                ESP.restart(); // Перезапуск ESP32
+                break;
+            case 4:
 				nvs_flash_erase();
 				nvs_flash_init();
                 ESP.restart(); // Перезапуск ESP32
@@ -163,6 +172,18 @@ void UsbController::settingsMenu() {
             GENERATE_SERIAL_INPUT_CASE(String, SETTING_TYPE::wifi_ssid, nullptr, buffer_String, settingUpdateQueue, update)
             GENERATE_SERIAL_INPUT_CASE(String, SETTING_TYPE::wifi_password, nullptr, buffer_String, settingUpdateQueue, update)
             GENERATE_SERIAL_INPUT_CASE(uint32_t, SETTING_TYPE::battery_id, validate_id, buffer_uint32_t, settingUpdateQueue, update)
+            case SETTING_TYPE::hostname:
+                Serial.printf("\r\nВведите новый %s: ", SETTING_NAMES[SETTING_TYPE::hostname]);
+
+                if(read_String(&buffer_String, 0) != 0)
+                    break;
+
+                update.value = buffer_String;
+                update.key = SETTING_TYPE::hostname;
+                xQueueSend(settingUpdateQueue, &update, portMAX_DELAY); 
+                vTaskDelay(1000);
+                ESP.restart(); // Перезапуск ESP32
+                break;
             case SETTING_TYPE::mode:
                 Serial.printf("\r\nВведите новый %s: ", SETTING_NAMES[SETTING_TYPE::mode]);
 

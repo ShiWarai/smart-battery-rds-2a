@@ -19,7 +19,7 @@ void WirelessController::wirelessTask(void *pvParameters) {
 		// поиск IP-адреса hostname
 		#ifdef HOSTNAME
 		if (HOSTIP.toString() == "0.0.0.0") {
-			HOSTIP = MDNS.queryHost(HOSTNAME);
+			HOSTIP = MDNS.queryHost(settings.hostname);
 		} else
 		#endif
 		if(!client.connected()) // если потеряли связь с клиентом, то устонавливаем её заново

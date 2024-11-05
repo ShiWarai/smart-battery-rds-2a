@@ -109,6 +109,7 @@ for (unsigned short i = 0; i < SETTING_TYPE::SETTINGS_COUNT; i++) { \
     TYPE_AND_NAME(uint32_t, usb_delay, __VA_ARGS__) \
     TYPE_AND_NAME(uint32_t, wireless_delay, __VA_ARGS__) \
     TYPE_AND_NAME(uint32_t, display_time, __VA_ARGS__) \
+    TYPE_AND_NAME(String, hostname, __VA_ARGS__) \
     TYPE_AND_NAME(String, wifi_ssid, __VA_ARGS__) \
     TYPE_AND_NAME(String, wifi_password, __VA_ARGS__) \
     TYPE_AND_NAME(uint32_t, mode, __VA_ARGS__) \

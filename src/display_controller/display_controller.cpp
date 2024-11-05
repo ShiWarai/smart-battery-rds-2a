@@ -9,8 +9,8 @@ void DisplayController::displayTask(void *pvParameters) {
 	bool display_enabled = false;
     const int display_frequency = 200;
 
+	GButton display_button(BUTTONS_PIN);
 	pinMode(OLED_PWR_PIN, OUTPUT);
-	pinMode(BUTTONS_PIN, INPUT);
 	pinMode(BUZZER_PIN, OUTPUT);
 
 	digitalWrite(OLED_PWR_PIN, HIGH);
@@ -21,7 +21,8 @@ void DisplayController::displayTask(void *pvParameters) {
 	{
 	case BATTERY_MODS::POWERSAVE:
 		while(true) {
-			if(!digitalRead(BUTTONS_PIN)) // Сейчас горит всегда
+			display_button.tick();
+			if(display_button.isClick()) // Сейчас горит всегда
 			{
 				if(!display_enabled) {
 					if (xSemaphoreTake(wireMutex, portMAX_DELAY) == pdTRUE) // Забираем управление I2C и делаем перезапуск датчика

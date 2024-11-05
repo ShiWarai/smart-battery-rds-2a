@@ -5,6 +5,8 @@
 #include "preferences_controller/settings.hpp"
 #include "sensor_controller/INA226Data.hpp"
 #include "usb_controller/validators.hpp"
+#include <Preferences.h>
+
 
 #define DECLARE_SERIAL_PRINT_ITER(TYPE, F1, F2, SETTING_POINTER) \
 if(SETTING_TYPES[i] == #TYPE) \

@@ -17,6 +17,11 @@ void PreferencesController::preferencesTask(void *pvParameters) {
 	settings.display_time = 10000 / portTICK_PERIOD_MS;
 	settings.mode = 0;
 	settings.access_key = DEFAULT_ACCESS_KEY;
+	#ifndef WOKWI
+	settings.hostname = HOSTNAME;
+	#else
+	settings.hostname = HOST;
+	#endif
 
 	DECLARE_SETTING_TYPES_LINKS_VARIANT(UNIQUE_SETTINGS_TYPES) setting;
 	void* buffer;

@@ -4,7 +4,7 @@
 
 #include <preferences_controller/preferences_controller.hpp>
 #ifdef WITH_TEST
-#include <test_mode\test_mode.hpp>
+#include <test_mode/test_mode.hpp>
 #endif
 #include <sensor_controller/sensor_controller.hpp>
 #include <wireless_controller/wireless_controller.hpp>

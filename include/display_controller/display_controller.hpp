@@ -4,7 +4,7 @@
 #include "sensor_controller/INA226Data.hpp"
 // #include "wireless_controller/wireless_controller.hpp"
 #include "preferences_controller/settings.hpp"
-
+#include "GyverButton.h"
 
 class DisplayController
 {
