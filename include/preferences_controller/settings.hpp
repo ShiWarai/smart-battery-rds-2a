@@ -74,10 +74,10 @@ for (unsigned short i = 0; i < SETTING_TYPE::SETTINGS_COUNT; i++) { \
     case SETTING_TYPE::NAME: return &settings.NAME;
 
 // Определяем структуру и генерируем enum
-#define GEN_SETTINGS(NAME, FIELDS) \
-    inline struct NAME { \
+#define GEN_SETTINGS(TYPE_NAME, NAME, FIELDS) \
+    inline struct TYPE_NAME { \
         FIELDS(DECLARE_SETTINGS_FIELD) \
-    } settings; \
+    } NAME; \
     \
     enum SETTING_TYPE { \
         FIELDS(REMOVE_TYPE) \
@@ -113,10 +113,12 @@ for (unsigned short i = 0; i < SETTING_TYPE::SETTINGS_COUNT; i++) { \
     TYPE_AND_NAME(String, wifi_ssid, __VA_ARGS__) \
     TYPE_AND_NAME(String, wifi_password, __VA_ARGS__) \
     TYPE_AND_NAME(uint32_t, mode, __VA_ARGS__) \
+    TYPE_AND_NAME(String, db_host, __VA_ARGS__) \
+    TYPE_AND_NAME(uint32_t, db_port, __VA_ARGS__) \
     TYPE_AND_NAME(uint32_t, battery_id, __VA_ARGS__) 
 
 // Генерируем структуру и enum
-GEN_SETTINGS(SETTINGS, SETTINGS_FIELDS)
+GEN_SETTINGS(SETTINGS, settings, SETTINGS_FIELDS)
 
 enum BATTERY_MODS {
     POWERSAVE,
@@ -128,4 +130,4 @@ typedef struct {
     DECLARE_SETTING_TYPES_VARIANT(UNIQUE_SETTINGS_TYPES) value;
 } SettingUpdate;
 
-inline QueueHandle_t settingUpdateQueue = xQueueCreate(10, sizeof(SettingUpdate));
+inline QueueHandle_t settingUpdateQueue = xQueueCreate(SETTING_TYPE::SETTINGS_COUNT*2, sizeof(SettingUpdate)*3);
