@@ -16,8 +16,10 @@ void PreferencesController::preferencesTask(void *pvParameters) {
 	settings.sensor_delay = 1000 / portTICK_PERIOD_MS;
 	settings.display_time = 10000 / portTICK_PERIOD_MS;
 	settings.mode = 0;
-	settings.db_host = DB_HOSTNAME;
-	settings.db_port = DB_PORT;
+	settings.influxdb_url = INFLUXDB_URL;
+	settings.influxdb_org = INFLUXDB_ORG;
+	settings.influxdb_bucket = INFLUXDB_BUCKET;
+	settings.influxdb_token = INFLUXDB_TOKEN;
 	settings.hostname = HOSTNAME;
 	settings.access_key = DEFAULT_ACCESS_KEY;
 

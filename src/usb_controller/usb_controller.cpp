@@ -171,8 +171,10 @@ void UsbController::settingsMenu() {
             GENERATE_SERIAL_INPUT_CASE(uint32_t, SETTING_TYPE::display_time, validate_uint, buffer_uint32_t, settingUpdateQueue, update)
             GENERATE_SERIAL_INPUT_CASE(String, SETTING_TYPE::wifi_ssid, nullptr, buffer_String, settingUpdateQueue, update)
             GENERATE_SERIAL_INPUT_CASE(String, SETTING_TYPE::wifi_password, nullptr, buffer_String, settingUpdateQueue, update)
-            GENERATE_SERIAL_INPUT_CASE(String, SETTING_TYPE::db_host, nullptr, buffer_String, settingUpdateQueue, update)
-            GENERATE_SERIAL_INPUT_CASE(uint32_t, SETTING_TYPE::db_port, validate_uint, buffer_uint32_t, settingUpdateQueue, update)
+            GENERATE_SERIAL_INPUT_CASE(String, SETTING_TYPE::influxdb_url, nullptr, buffer_String, settingUpdateQueue, update)
+            GENERATE_SERIAL_INPUT_CASE(String, SETTING_TYPE::influxdb_org, nullptr, buffer_String, settingUpdateQueue, update)
+            GENERATE_SERIAL_INPUT_CASE(String, SETTING_TYPE::influxdb_bucket, nullptr, buffer_String, settingUpdateQueue, update)
+            GENERATE_SERIAL_INPUT_CASE(String, SETTING_TYPE::influxdb_token, nullptr, buffer_String, settingUpdateQueue, update)
             GENERATE_SERIAL_INPUT_CASE(uint32_t, SETTING_TYPE::battery_id, validate_id, buffer_uint32_t, settingUpdateQueue, update)
             case SETTING_TYPE::hostname:
                 Serial.printf("\r\nВведите новый %s: ", SETTING_NAMES[SETTING_TYPE::hostname]);

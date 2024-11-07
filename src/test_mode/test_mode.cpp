@@ -11,6 +11,7 @@ void TestMode::test() {
     pref_test.putBool("display", false);
     pref_test.putBool("INA226", false);
     pref_test.putBool("wifi", false);
+    pref_test.putBool("database", false);
     
     if(pref_test.getBool("test_enabled")) {
         // Бузер
@@ -67,10 +68,24 @@ void TestMode::test() {
             pref_test.putBool("wifi", true);
         }
 
+
+        // Тестирование связи с БД
+        WiFi.begin(WIFI_SSID, WIFI_PASSWORD);
+
+        while (WiFi.status() != WL_CONNECTED)
+		    vTaskDelay(500);
+
+        InfluxDBClient client(INFLUXDB_URL, INFLUXDB_ORG, INFLUXDB_BUCKET, INFLUXDB_TOKEN);
+
+        if (client.validateConnection())
+            pref_test.putBool("database", true);
+        else
+            Serial.println("Error!");
+
         WiFi.scanDelete();
         WiFi.disconnect(true);
 
-        //oled.clearDisplay();
+        oled.clearDisplay();
         digitalWrite(OLED_PWR_PIN, LOW); // Выключение питания дисплея
         Wire.end();
 
@@ -78,5 +93,4 @@ void TestMode::test() {
     }
 
     pref_test.end();
-    // Serial.end();
 }

@@ -113,8 +113,10 @@ for (unsigned short i = 0; i < SETTING_TYPE::SETTINGS_COUNT; i++) { \
     TYPE_AND_NAME(String, wifi_ssid, __VA_ARGS__) \
     TYPE_AND_NAME(String, wifi_password, __VA_ARGS__) \
     TYPE_AND_NAME(uint32_t, mode, __VA_ARGS__) \
-    TYPE_AND_NAME(String, db_host, __VA_ARGS__) \
-    TYPE_AND_NAME(uint32_t, db_port, __VA_ARGS__) \
+    TYPE_AND_NAME(String, influxdb_url, __VA_ARGS__) \
+    TYPE_AND_NAME(String, influxdb_org, __VA_ARGS__) \
+    TYPE_AND_NAME(String, influxdb_bucket, __VA_ARGS__) \
+    TYPE_AND_NAME(String, influxdb_token, __VA_ARGS__) \
     TYPE_AND_NAME(uint32_t, battery_id, __VA_ARGS__) 
 
 // Генерируем структуру и enum

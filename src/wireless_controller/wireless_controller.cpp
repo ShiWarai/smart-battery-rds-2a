@@ -27,6 +27,7 @@ bool WirelessController::deserializeSettings(String json_str)
 	// Удаление скрытых полей
 	json.remove(SETTING_NAMES[SETTING_TYPE::access_key]);
 	json.remove(SETTING_NAMES[SETTING_TYPE::wifi_password]);
+	json.remove(SETTING_NAMES[SETTING_TYPE::influxdb_token]);
 
 	GENERATE_DESERIALIZE_CYCLE(json_str, json, settings, settingUpdateQueue, SETTINGS_FIELDS)
 	vTaskDelay(100);
@@ -44,6 +45,7 @@ String WirelessController::serializeSettings()
 	// Удаление скрытых полей
 	json.remove(SETTING_NAMES[SETTING_TYPE::access_key]);
 	json.remove(SETTING_NAMES[SETTING_TYPE::wifi_password]);
+	json.remove(SETTING_NAMES[SETTING_TYPE::influxdb_token]);
 	
 	serializeJson(json, json_str);
 	return json_str;
@@ -60,6 +62,7 @@ String WirelessController::serializeTestingResult() {
     json["display"] = pref_test.getBool("display");
     json["INA226"] = pref_test.getBool("INA226");
     json["wifi"] = pref_test.getBool("wifi");
+	json["database"] = pref_test.getBool("database");
 
 	pref_test.end();
 
@@ -67,30 +70,28 @@ String WirelessController::serializeTestingResult() {
 	return json_str;
 }
 
-// void sendMetricsToOpenTSDB()
-// {
-// 	HTTPClient http;
-// 	http.begin("http://<OPENTSDB_SERVER>:<PORT>/api/put");
-// 	http.addHeader("Content-Type", "application/json");
-// 	String metricsData = raw_data->getJSON();
-// 	int httpResponseCode = http.POST(metricsData);
-// 	if (httpResponseCode > 0)
-// 	{
-// 		String response = http.getString();
-// 		Serial.println(response);
-// 	}
-// 	else
-// 	{
-// 		Serial.printf("Error on sending POST: %d\n", httpResponseCode);
-// 	}
-// 	http.end();
-// }
+void currentTimeSync(const char *tzInfo, const char* ntpServer1, const char* ntpServer2 = nullptr, const char* ntpServer3 = nullptr) {
+  // Accurate time is necessary for certificate validion
+
+  configTzTime(tzInfo,ntpServer1, ntpServer2, ntpServer3);
+
+  int i = 0;
+  while (time(nullptr) < 1000000000l && i < 40) {
+    delay(500);
+  }
+
+  // Show time
+  time_t tnow = time(nullptr);
+}
 
 void WirelessController::wirelessTask(void *pvParameters)
 {
 	IPAddress HOSTIP;
 	AsyncWebServer server(PORT);
+	InfluxDBClient client(settings.influxdb_url, settings.influxdb_org, settings.influxdb_bucket, settings.influxdb_token);
+  	Point data_point("battery");
 
+	WiFi.setHostname((String("battery_")+String(settings.battery_id)).c_str()); 
 	WiFi.begin(settings.wifi_ssid, settings.wifi_password);
 	
 	while (WiFi.status() != WL_CONNECTED)
@@ -98,6 +99,12 @@ void WirelessController::wirelessTask(void *pvParameters)
 
 	// Получение главной страницы
 	server.on("/", HTTP_GET, [](AsyncWebServerRequest *request) { request->redirect(settings.hostname); });
+
+	// Тестовое получение данных для пинга по HTTP
+	server.on("/ping", HTTP_GET, [](AsyncWebServerRequest *request) {
+		request->send(200, "application/json", "{\"message\":\"OK\"}"); }
+	);
+
 	
 	// Получение данных метрик
 	server.on("/data", HTTP_GET, [](AsyncWebServerRequest *request) {
@@ -162,15 +169,37 @@ void WirelessController::wirelessTask(void *pvParameters)
 				request->send(200, "application/json", WirelessController::serializeTestingResult());
 			else
 				request->send(403, "application/json", "{\"error\":\"Invalid access key\"}");
+		}
+	);
+
+	// Рестарт
+	server.on("/restart", HTTP_POST,
+		[](AsyncWebServerRequest *request) {
+			if (request->hasHeader("api_key") && request->header("api_key") == settings.access_key)
+				request->send(200, "application/json", "{\"message\":\"Restart ESP32...\"}");
+			else
+				request->send(403, "application/json", "{\"error\":\"Invalid access key\"}");
 
 			ESP.restart();
 		}
 	);
 
-	server.begin(); // Запускаем сервер
+	// Настраиваем работу с СУБД
+	currentTimeSync(TZ_INFO, "pool.ntp.org", "time.nis.gov");
+	data_point.addTag("device", String("battery_") + String(settings.battery_id));
 
+	server.begin(); // Запускаем сервер
 	while(true) {
-		//sendMetricsToOpenTSDB();
+		// Check server connection
+		if (client.validateConnection()) {
+			data_point.addField("voltage", raw_data->voltage);
+			data_point.addField("current", raw_data->current);
+			data_point.addField("power", raw_data->power);
+			data_point.addField("capacity", raw_data->capacity);
+
+			client.writePoint(data_point);
+		}
+
 		vTaskDelay(settings.wireless_delay);
 	}
 }
