@@ -3,6 +3,7 @@
 #include <WiFi.h>
 #include <ESPAsyncWebServer.h>
 #include <InfluxDbClient.h>
+#include <ESPmDNS.h>
 #include "preferences_controller/settings.hpp"
 #include "sensor_controller/INA226Data.hpp"
 

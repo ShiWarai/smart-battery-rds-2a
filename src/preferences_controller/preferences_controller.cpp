@@ -34,6 +34,8 @@ void PreferencesController::preferencesTask(void *pvParameters) {
 
 	preferences.end();
 
+	vTaskPrioritySet(NULL, 3); // Увеличиваем приоритет
+
 	while(true) {
 		if (xQueueReceive(settingUpdateQueue, &update, portMAX_DELAY)) {
 			preferences.begin(SETTINGS_SPACE_NAME, false);

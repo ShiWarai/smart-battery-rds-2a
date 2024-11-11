@@ -108,15 +108,15 @@ void UsbController::com_menu() {
                 pref_test.begin("testing", false);
                 pref_test.putBool("test_enabled", true);
                 pref_test.end();
-                ESP.restart(); // Перезапуск ESP32
+                ESP.restart();
                 break;
             case 3:
-                ESP.restart(); // Перезапуск ESP32
+                ESP.restart();
                 break;
             case 4:
 				nvs_flash_erase();
 				nvs_flash_init();
-                ESP.restart(); // Перезапуск ESP32
+                ESP.restart();
                 break;
             default:
                 Serial.print("\r\n");
@@ -212,9 +212,11 @@ void UsbController::settingsMenu() {
 void UsbController::usbTask(void *pvParameters) {
 	Serial.begin(115200);
 
+    //vTaskPrioritySet(NULL, 3); // Увеличиваем приоритет
+
 	while(true) {
 		if(Serial.isConnected())
-		{	
+		{
 			if(Serial.available()) // Позже сделаем возможность прерывать поток
 				com_menu();
 			Serial.println(raw_data->getJSON());

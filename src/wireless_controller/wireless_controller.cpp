@@ -26,7 +26,7 @@ bool WirelessController::deserializeSettings(String json_str)
 
 	// Удаление скрытых полей
 	json.remove(SETTING_NAMES[SETTING_TYPE::access_key]);
-	json.remove(SETTING_NAMES[SETTING_TYPE::wifi_password]);
+	//json.remove(SETTING_NAMES[SETTING_TYPE::wifi_password]);
 	json.remove(SETTING_NAMES[SETTING_TYPE::influxdb_token]);
 
 	GENERATE_DESERIALIZE_CYCLE(json_str, json, settings, settingUpdateQueue, SETTINGS_FIELDS)
@@ -44,7 +44,7 @@ String WirelessController::serializeSettings()
 
 	// Удаление скрытых полей
 	json.remove(SETTING_NAMES[SETTING_TYPE::access_key]);
-	json.remove(SETTING_NAMES[SETTING_TYPE::wifi_password]);
+	//json.remove(SETTING_NAMES[SETTING_TYPE::wifi_password]);
 	json.remove(SETTING_NAMES[SETTING_TYPE::influxdb_token]);
 	
 	serializeJson(json, json_str);
@@ -71,17 +71,14 @@ String WirelessController::serializeTestingResult() {
 }
 
 void currentTimeSync(const char *tzInfo, const char* ntpServer1, const char* ntpServer2 = nullptr, const char* ntpServer3 = nullptr) {
-  // Accurate time is necessary for certificate validion
+	configTzTime(tzInfo,ntpServer1, ntpServer2, ntpServer3);
 
-  configTzTime(tzInfo,ntpServer1, ntpServer2, ntpServer3);
+	int i = 0;
+	while (time(nullptr) < 1000000000l && i < 40) {
+	delay(500);
+	}
 
-  int i = 0;
-  while (time(nullptr) < 1000000000l && i < 40) {
-    delay(500);
-  }
-
-  // Show time
-  time_t tnow = time(nullptr);
+	time_t tnow = time(nullptr);
 }
 
 void WirelessController::wirelessTask(void *pvParameters)
@@ -90,12 +87,17 @@ void WirelessController::wirelessTask(void *pvParameters)
 	AsyncWebServer server(PORT);
 	InfluxDBClient client(settings.influxdb_url, settings.influxdb_org, settings.influxdb_bucket, settings.influxdb_token);
   	Point data_point("battery");
+	String device_hostname = String("battery_") + String(settings.battery_id);
 
-	WiFi.setHostname((String("battery_")+String(settings.battery_id)).c_str()); 
+	WiFi.setHostname(device_hostname.c_str()); 
 	WiFi.begin(settings.wifi_ssid, settings.wifi_password);
-	
+
 	while (WiFi.status() != WL_CONNECTED)
 		vTaskDelay(500);
+
+	while (!MDNS.begin(device_hostname.c_str()))
+		vTaskDelay(500);
+	
 
 	// Получение главной страницы
 	server.on("/", HTTP_GET, [](AsyncWebServerRequest *request) { request->redirect(settings.hostname); });
@@ -104,11 +106,10 @@ void WirelessController::wirelessTask(void *pvParameters)
 	server.on("/ping", HTTP_GET, [](AsyncWebServerRequest *request) {
 		request->send(200, "application/json", "{\"message\":\"OK\"}"); }
 	);
-
 	
 	// Получение данных метрик
 	server.on("/data", HTTP_GET, [](AsyncWebServerRequest *request) {
-		String batteryData = raw_data->getJSON(); request->send(200, "application/json", batteryData); }
+		request->send(200, "application/json", raw_data->getJSON()); }
 	);
 
 	// Получение настроек
@@ -116,8 +117,7 @@ void WirelessController::wirelessTask(void *pvParameters)
 		[](AsyncWebServerRequest *request) {
 			if (request->hasHeader("api_key") && request->header("api_key") == settings.access_key) 
 			{
-				String settingsData = WirelessController::serializeSettings();
-				request->send(200, "application/json", settingsData); 
+				request->send(200, "application/json", WirelessController::serializeSettings()); 
 			} 
 			else { 
 				request->send(403, "application/json", "{\"error\":\"Invalid API key\"}"); 
@@ -180,17 +180,20 @@ void WirelessController::wirelessTask(void *pvParameters)
 			else
 				request->send(403, "application/json", "{\"error\":\"Invalid access key\"}");
 
+			vTaskDelay(1000);
+
 			ESP.restart();
 		}
 	);
 
-	// Настраиваем работу с СУБД
-	currentTimeSync(TZ_INFO, "pool.ntp.org", "time.nis.gov");
-	data_point.addTag("device", String("battery_") + String(settings.battery_id));
+	//vTaskPrioritySet(NULL, 3); // Увеличиваем приоритет
 
 	server.begin(); // Запускаем сервер
+
+	// Настраиваем работу с СУБД
+	currentTimeSync(TZ_INFO, "pool.ntp.org", "time.nis.gov");
+	data_point.addTag("device", device_hostname);
 	while(true) {
-		// Check server connection
 		if (client.validateConnection()) {
 			data_point.addField("voltage", raw_data->voltage);
 			data_point.addField("current", raw_data->current);

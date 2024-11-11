@@ -6,14 +6,14 @@ void TestMode::test() {
     pref_test.begin("testing", false);
     Serial.begin(115200);
 
-    // Установка дефолтных значений
-    pref_test.putBool("buzzer", false);
-    pref_test.putBool("display", false);
-    pref_test.putBool("INA226", false);
-    pref_test.putBool("wifi", false);
-    pref_test.putBool("database", false);
-    
-    if(pref_test.getBool("test_enabled")) {
+    if(pref_test.isKey("test_enabled") && pref_test.getBool("test_enabled")) {
+        // Установка дефолтных значений
+        pref_test.putBool("buzzer", false);
+        pref_test.putBool("display", false);
+        pref_test.putBool("INA226", false);
+        pref_test.putBool("wifi", false);
+        pref_test.putBool("database", false);
+
         // Бузер
         pinMode(BUZZER_PIN, OUTPUT);
         tone(BUZZER_PIN, 2560, 250);
@@ -80,7 +80,7 @@ void TestMode::test() {
         if (client.validateConnection())
             pref_test.putBool("database", true);
         else
-            Serial.println("Error!");
+            Serial.println("Ошибка подключения к БД");
 
         WiFi.scanDelete();
         WiFi.disconnect(true);
@@ -90,7 +90,10 @@ void TestMode::test() {
         Wire.end();
 
         pref_test.putBool("test_enabled", false);
-    }
+        pref_test.end();
 
-    pref_test.end();
+        ESP.restart();
+    }
+    else
+        pref_test.end();
 }
