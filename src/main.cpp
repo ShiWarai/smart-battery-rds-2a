@@ -14,6 +14,9 @@ void setup()
 	xTaskCreate(DisplayController::displayTask, "Display task", 4096, wireMutex, 1, NULL);
 	#endif
 	xTaskCreate(SensorController::sensorTask, "Sensor task", 2048, wireMutex, 1, NULL);
-	xTaskCreate(UsbController::usbTask, "USB task", 4096, NULL, 1, NULL);
-	xTaskCreate(WirelessController::wirelessTask, "Wireless task", 16384, NULL, 1, NULL);
+
+	vTaskDelay(3000);
+
+	xTaskCreate(UsbController::usbTask, "USB task", 4096, NULL, 2, NULL);
+	xTaskCreate(WirelessController::wirelessTask, "Wireless task", 16384, NULL, 2, NULL);
 }
