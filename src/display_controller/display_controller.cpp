@@ -22,7 +22,9 @@ void DisplayController::displayTask(void *pvParameters) {
 	case BATTERY_MODS::POWERSAVE:
 		while(true) {
 			display_button.tick();
-			if(display_button.click()) // Сейчас горит всегда
+			if(display_button.hold()){
+				invertMode();
+			}else if(display_button.click()) // Сейчас горит всегда
 			{
 				if(!display_enabled) {
 					if (xSemaphoreTake(wireMutex, portMAX_DELAY) == pdTRUE) // Забираем управление I2C и делаем перезапуск датчика
@@ -53,15 +55,28 @@ void DisplayController::displayTask(void *pvParameters) {
 		}
 	case BATTERY_MODS::FULL:
 		while(true) {
+			display_button.tick();
+			Serial.println("A");
+			if(display_button.hold()){invertMode();}
 			if (xSemaphoreTake(wireMutex, portMAX_DELAY) == pdTRUE)
 			{
 				DisplayController::printStatus(&oled, *raw_data);
-				
 				xSemaphoreGive(wireMutex);
 				vTaskDelay(display_frequency);
 			}
 		}
 	}
+}
+
+void DisplayController::invertMode() {
+	Serial.print("!mode");
+	SettingUpdate update;
+	update.value = (uint32_t)!settings.mode;
+	update.key = SETTING_TYPE::mode;
+	Serial.println(!settings.mode);
+	xQueueSend(settingUpdateQueue, &update, portMAX_DELAY);
+	vTaskDelay(1000);
+	ESP.restart();
 }
 
 void DisplayController::turnOnDisplay(U8G2_SSD1306_64X32_1F_F_HW_I2C *oled) {
