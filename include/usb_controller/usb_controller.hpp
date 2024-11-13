@@ -2,10 +2,11 @@
 
 #include <Arduino.h>
 #include <nvs_flash.h>
+#include <Preferences.h>
+#include <WiFi.h>
 #include "preferences_controller/settings.hpp"
 #include "sensor_controller/INA226Data.hpp"
 #include "usb_controller/validators.hpp"
-#include <Preferences.h>
 
 
 #define DECLARE_SERIAL_PRINT_ITER(TYPE, F1, F2, SETTING_POINTER) \
@@ -30,9 +31,9 @@ public:
     static void usbTask(void *pvParameters);
 private:
     static void clearInputBuffer();
-    static void com_menu();
+    static void comMenu();
     static void settingsMenu();
-    static void test();
+    static void outputInfo();
 
     static String readInput();
     static error_t read_String(String *, error_t validator(String));

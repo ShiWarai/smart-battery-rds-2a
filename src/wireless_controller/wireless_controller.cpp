@@ -186,14 +186,12 @@ void WirelessController::wirelessTask(void *pvParameters)
 		}
 	);
 
-	//vTaskPrioritySet(NULL, 3); // Увеличиваем приоритет
-
 	server.begin(); // Запускаем сервер
 
 	// Настраиваем работу с СУБД
 	currentTimeSync(TZ_INFO, "pool.ntp.org", "time.nis.gov");
 	data_point.addTag("device", device_hostname);
-	while(true) {
+	while(WiFi.status() == WL_CONNECTED) {
 		if (client.validateConnection()) {
 			data_point.addField("voltage", raw_data->voltage);
 			data_point.addField("current", raw_data->current);

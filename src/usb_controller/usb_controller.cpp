@@ -86,7 +86,7 @@ error_t UsbController::read_float(float *num, error_t validator(String) = nullpt
     }
 }
 
-void UsbController::com_menu() {
+void UsbController::comMenu() {
 	clearInputBuffer();
     Preferences pref_test;
     uint32_t buffer_num;
@@ -94,9 +94,10 @@ void UsbController::com_menu() {
         // Вывод меню
         Serial.println("\r\nМеню:");
         Serial.println("1) Настройки");
-        Serial.println("2) Тест");
-        Serial.println("3) Рестарт");
-        Serial.println("4) Сброс(очистка памяти + рестарт)");
+        Serial.println("2) Вывести информацию о системе");
+        Serial.println("3) Тест");
+        Serial.println("4) Рестарт");
+        Serial.println("5) Сброс(очистка памяти + рестарт)");
         Serial.println("0) Выйти");
         
         read_uint32_t(&buffer_num);
@@ -105,15 +106,18 @@ void UsbController::com_menu() {
                 settingsMenu();
                 break;
             case 2:
+                outputInfo();
+                break;
+            case 3:
                 pref_test.begin("testing", false);
                 pref_test.putBool("test_enabled", true);
                 pref_test.end();
                 ESP.restart();
                 break;
-            case 3:
+            case 4:
                 ESP.restart();
                 break;
-            case 4:
+            case 5:
 				nvs_flash_erase();
 				nvs_flash_init();
                 ESP.restart();
@@ -126,9 +130,10 @@ void UsbController::com_menu() {
     }
 }
 
-void UsbController::test() // тестирование работы всех систем(дисплей, пищалка, вольтамперметр(статистика в консоль), wi-fi(статистика в консоль))
-{
+void UsbController::outputInfo() {
+    Serial.printf("\r\nАккумулятор #%d\r\n", settings.battery_id);
 
+    Serial.printf("Текущий IP: %s\r\n", WiFi.localIP().toString());
 }
 
 #define GENERATE_SERIAL_INPUT_CASE(TYPE, NAME, VALIDATOR_FUNC, BUFFER, UPDATE_QUEUE, UPDATE) \
@@ -212,13 +217,11 @@ void UsbController::settingsMenu() {
 void UsbController::usbTask(void *pvParameters) {
 	Serial.begin(115200);
 
-    //vTaskPrioritySet(NULL, 3); // Увеличиваем приоритет
-
 	while(true) {
 		if(Serial.isConnected())
 		{
 			if(Serial.available()) // Позже сделаем возможность прерывать поток
-				com_menu();
+				comMenu();
 			Serial.println(raw_data->getJSON());
         }
 
