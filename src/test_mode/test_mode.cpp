@@ -72,18 +72,19 @@ void TestMode::test() {
         // Тестирование связи с БД
         WiFi.begin(WIFI_SSID, WIFI_PASSWORD);
 
-        while (WiFi.status() != WL_CONNECTED)
-		    vTaskDelay(500);
+        vTaskDelay(3000);
 
-        InfluxDBClient client(INFLUXDB_URL, INFLUXDB_ORG, INFLUXDB_BUCKET, INFLUXDB_TOKEN);
+        if(WiFi.status() == WL_CONNECTED) {
+            InfluxDBClient client(INFLUXDB_URL, INFLUXDB_ORG, INFLUXDB_BUCKET, INFLUXDB_TOKEN);
 
-        if (client.validateConnection())
-            pref_test.putBool("database", true);
-        else
-            Serial.println("Ошибка подключения к БД");
+            if (client.validateConnection())
+                pref_test.putBool("database", true);
+            else
+                Serial.println("Ошибка подключения к БД");
 
-        WiFi.scanDelete();
-        WiFi.disconnect(true);
+            WiFi.scanDelete();
+        }
+        WiFi.disconnect(true, true);
 
         oled.clearDisplay();
         digitalWrite(OLED_PWR_PIN, LOW); // Выключение питания дисплея
