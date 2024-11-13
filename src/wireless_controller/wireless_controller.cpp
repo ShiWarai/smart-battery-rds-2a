@@ -71,23 +71,20 @@ String WirelessController::serializeTestingResult() {
 }
 
 void currentTimeSync(const char *tzInfo, const char* ntpServer1, const char* ntpServer2 = nullptr, const char* ntpServer3 = nullptr) {
-	configTzTime(tzInfo,ntpServer1, ntpServer2, ntpServer3);
+	configTzTime(tzInfo, ntpServer1, ntpServer2, ntpServer3);
 
 	int i = 0;
 	while (time(nullptr) < 1000000000l && i < 40) {
 	delay(500);
 	}
-
-	time_t tnow = time(nullptr);
 }
 
 void WirelessController::wirelessTask(void *pvParameters)
 {
-	IPAddress HOSTIP;
-	AsyncWebServer server(PORT);
-	InfluxDBClient client(settings.influxdb_url, settings.influxdb_org, settings.influxdb_bucket, settings.influxdb_token);
-  	Point data_point("battery");
 	String device_hostname = String("battery_") + String(settings.battery_id);
+
+	AsyncWebServer server(PORT); // Веб-сервер
+	InfluxDBClient client(settings.influxdb_url, settings.influxdb_org, settings.influxdb_bucket, settings.influxdb_token); // Сервис для отправки в InfluxDB
 
 	WiFi.setHostname(device_hostname.c_str()); 
 	WiFi.begin(settings.wifi_ssid, settings.wifi_password);
@@ -187,18 +184,27 @@ void WirelessController::wirelessTask(void *pvParameters)
 	);
 
 	server.begin(); // Запускаем сервер
+	Serial.println(1);
 
 	// Настраиваем работу с СУБД
-	currentTimeSync(TZ_INFO, "pool.ntp.org", "time.nis.gov");
+	Point data_point("battery");
 	data_point.addTag("device", device_hostname);
-	while(WiFi.status() == WL_CONNECTED) {
-		if (client.validateConnection()) {
-			data_point.addField("voltage", raw_data->voltage);
-			data_point.addField("current", raw_data->current);
-			data_point.addField("power", raw_data->power);
-			data_point.addField("capacity", raw_data->capacity);
+	
+	currentTimeSync(TZ_INFO, "pool.ntp.org", "time.nis.gov", "0.ru.pool.ntp.org");
+	client.setWriteOptions(WriteOptions().batchSize(10).bufferSize(30).maxRetryInterval(60)); // Конфигурация
+	
+	while(true) {
+		if (WiFi.status() == WL_CONNECTED) {
+			Serial.println(WiFi.status());
 
-			client.writePoint(data_point);
+			if (client.validateConnection()) {
+				data_point.addField("voltage", raw_data->voltage);
+				data_point.addField("current", raw_data->current);
+				data_point.addField("power", raw_data->power);
+				data_point.addField("capacity", raw_data->capacity);
+
+				client.writePoint(data_point);
+			}
 		}
 
 		vTaskDelay(settings.wireless_delay);

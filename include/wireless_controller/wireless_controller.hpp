@@ -7,6 +7,8 @@
 #include "preferences_controller/settings.hpp"
 #include "sensor_controller/INA226Data.hpp"
 
+#define TZ_INFO "UTC-3"
+
 class WirelessController
 {
 public:

@@ -1,11 +1,11 @@
 #pragma once
 
 #include <U8g2lib.h>
+#include <EncButton.h>
 #include "sensor_controller/INA226Data.hpp"
-// #include "wireless_controller/wireless_controller.hpp"
 #include "preferences_controller/settings.hpp"
-#include "EncButton.h"
-#define EB_HOLD_TIME 600   // таймаут удержания (кнопка)
+
+#define CHANGE_MODE_HOLD_TIME 5000
 
 class DisplayController
 {
