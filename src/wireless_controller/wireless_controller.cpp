@@ -73,10 +73,8 @@ String WirelessController::serializeTestingResult() {
 void currentTimeSync(const char *tzInfo, const char* ntpServer1, const char* ntpServer2 = nullptr, const char* ntpServer3 = nullptr) {
 	configTzTime(tzInfo, ntpServer1, ntpServer2, ntpServer3);
 
-	int i = 0;
-	while (time(nullptr) < 1000000000l && i < 40) {
-	delay(500);
-	}
+	while (time(nullptr) < 1000000000l)
+		delay(500);
 }
 
 void WirelessController::wirelessTask(void *pvParameters)
@@ -94,6 +92,8 @@ void WirelessController::wirelessTask(void *pvParameters)
 
 	while (!MDNS.begin(device_hostname.c_str()))
 		vTaskDelay(500);
+
+	MDNS.addService("http", "tcp", 80);
 	
 
 	// Получение главной страницы
@@ -184,24 +184,24 @@ void WirelessController::wirelessTask(void *pvParameters)
 	);
 
 	server.begin(); // Запускаем сервер
-	Serial.println(1);
 
 	// Настраиваем работу с СУБД
 	Point data_point("battery");
-	data_point.addTag("device", device_hostname);
 	
 	currentTimeSync(TZ_INFO, "pool.ntp.org", "time.nis.gov", "0.ru.pool.ntp.org");
-	client.setWriteOptions(WriteOptions().batchSize(10).bufferSize(30).maxRetryInterval(60)); // Конфигурация
+	client.setWriteOptions(WriteOptions().writePrecision(WritePrecision::S).batchSize(10).bufferSize(30).flushInterval(30).maxRetryInterval(60)); // Конфигурация
 	
+	data_point.addTag("device", device_hostname);
 	while(true) {
 		if (WiFi.status() == WL_CONNECTED) {
-			Serial.println(WiFi.status());
-
 			if (client.validateConnection()) {
+				data_point.clearFields();
+
 				data_point.addField("voltage", raw_data->voltage);
 				data_point.addField("current", raw_data->current);
 				data_point.addField("power", raw_data->power);
 				data_point.addField("capacity", raw_data->capacity);
+				data_point.setTime(time(nullptr));
 
 				client.writePoint(data_point);
 			}

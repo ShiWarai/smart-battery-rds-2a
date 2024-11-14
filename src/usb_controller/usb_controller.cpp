@@ -134,6 +134,7 @@ void UsbController::outputInfo() {
     Serial.printf("\r\nАккумулятор #%d\r\n", settings.battery_id);
 
     Serial.printf("Текущий IP: %s\r\n", WiFi.localIP().toString());
+    Serial.printf("Текущая частота: %d\r\n", getCpuFrequencyMhz());
 }
 
 #define GENERATE_SERIAL_INPUT_CASE(TYPE, NAME, VALIDATOR_FUNC, BUFFER, UPDATE_QUEUE, UPDATE) \
