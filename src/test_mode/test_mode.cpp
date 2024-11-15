@@ -36,11 +36,11 @@ void TestMode::test() {
         // INA226
         INA226 ina226(0x40);
         if (ina226.begin()) {
-            Serial.println("INA226 инициализирован успешно");
+            Serial.println("INA226 инициализирован успешно.");
             pref_test.putBool("INA226", true);
         }
         else
-            Serial.println("Ошибка инициализации INA226");
+            Serial.println("Ошибка инициализации INA226.");
 
         // Кнопка
         pinMode(BUTTONS_PIN, INPUT);

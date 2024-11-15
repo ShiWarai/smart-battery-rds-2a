@@ -17,6 +17,6 @@ void setup()
 
 	vTaskDelay(3000);
 
-	xTaskCreate(UsbController::usbTask, "USB task", 4096, NULL, 2, NULL);
-	xTaskCreate(WirelessController::wirelessTask, "Wireless task", 16384, NULL, 2, NULL);
+	xTaskCreate(UsbController::usbTask, "USB task", 4096, NULL, 1, NULL);
+	xTaskCreate(WirelessController::wirelessTask, "Wireless task", 16384, NULL, 1, NULL);
 }

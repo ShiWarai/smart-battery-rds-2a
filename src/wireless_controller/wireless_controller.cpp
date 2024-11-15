@@ -197,11 +197,11 @@ void WirelessController::wirelessTask(void *pvParameters)
 			if (client.validateConnection()) {
 				data_point.clearFields();
 
-				data_point.addField("voltage", raw_data->voltage);
-				data_point.addField("current", raw_data->current);
-				data_point.addField("power", raw_data->power);
-				data_point.addField("capacity", raw_data->capacity);
-				data_point.setTime(time(nullptr));
+				data_point.addField("voltage", raw_data->voltage, 2);
+				data_point.addField("current", raw_data->current, 2);
+				data_point.addField("power", raw_data->power, 2);
+				data_point.addField("capacity", raw_data->capacity, 2);
+				data_point.setTime(raw_data->timestamp);
 
 				client.writePoint(data_point);
 			}

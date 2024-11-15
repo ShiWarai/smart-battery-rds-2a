@@ -15,6 +15,13 @@
 
 class INA226Data {
 public:
+	uint32_t *id;
+	float voltage;
+	float current;
+	float power;
+	float capacity;
+	time_t timestamp;
+
 	INA226Data(uint32_t* id) {
 		this->id = id;
 	};
@@ -24,6 +31,7 @@ public:
 		this->current = sensor->getCurrent();
 		this->power = sensor->getPower() * SIGN(this->current);
 		this->capacity = FLOAT_MAP(sensor->getBusVoltage(),3.3,4.2,0.0,100.0);
+		this->timestamp = time(nullptr);
 	};
 
 	// String getJSON() {
@@ -37,18 +45,12 @@ public:
 		json["A"] = round2(this->current);
 		json["P"] = round2(this->power);
 		json["C"] = round2(this->capacity);
+		json["T"] = this->timestamp;
 
 		// Конвертируем JSON-документ в строку
 		serializeJson(json, buffer);
 		return buffer;
 	};
-
-	uint32_t *id;
-	float voltage;
-	float current;
-	float power;
-	float capacity;
-
 private:
 	JsonDocument json;
 	String buffer;
