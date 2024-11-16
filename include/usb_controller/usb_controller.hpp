@@ -10,9 +10,9 @@
 
 
 #define DECLARE_SERIAL_PRINT_ITER(TYPE, F1, F2, SETTING_POINTER) \
-if(SETTING_TYPES[i] == #TYPE) \
+if(SETTINGS_INFO[i].type == #TYPE) \
 { \
-    Serial.print(SETTING_NAMES[i]); \
+    Serial.print(SETTINGS_INFO[i].name); \
     Serial.print("\r\t\t\t="); \
     Serial.print(*(std::get<TYPE*>(SETTING_POINTER))); \
 }

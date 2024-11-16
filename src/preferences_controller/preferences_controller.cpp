@@ -13,7 +13,7 @@ void PreferencesController::preferencesTask(void *pvParameters) {
 	settings.wifi_ssid = WIFI_SSID;
 	settings.wireless_delay = 1000 / portTICK_PERIOD_MS;
 	settings.usb_delay = 1000 / portTICK_PERIOD_MS;
-	settings.sensor_delay = 1000 / portTICK_PERIOD_MS;
+	settings.sensor_delay = 100 / portTICK_PERIOD_MS;
 	settings.display_time = 10000 / portTICK_PERIOD_MS;
 	settings.mode = 0;
 	settings.influxdb_url = INFLUXDB_URL;
@@ -26,15 +26,13 @@ void PreferencesController::preferencesTask(void *pvParameters) {
 	DECLARE_SETTING_TYPES_LINKS_VARIANT(UNIQUE_SETTINGS_TYPES) setting;
 	void* buffer;
 
-	if(!preferences.isKey(SETTING_NAMES[SETTING_TYPE::battery_id])) { // Первичная инициализация настроек
+	if(!preferences.isKey(SETTINGS_INFO[SETTING_TYPE::battery_id].name)) { // Первичная инициализация настроек
 		GEN_PUTS_DEFAULT(preferences, buffer, setting, UNIQUE_SETTINGS_TYPES)
 	} else { // Загрузка настроек
 		GEN_READ_SETTINGS_CYCLE(preferences, buffer, setting, UNIQUE_SETTINGS_TYPES)
 	}
 
 	preferences.end();
-
-	vTaskPrioritySet(NULL, 3); // Увеличиваем приоритет
 
 	while(true) {
 		if (xQueueReceive(settingUpdateQueue, &update, portMAX_DELAY)) {

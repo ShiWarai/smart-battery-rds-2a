@@ -3,7 +3,7 @@
 void TestMode::test() {
     Preferences pref_test;
     
-    pref_test.begin("testing", false);
+    pref_test.begin(TESTING_SPACE_NAME, false);
     Serial.begin(115200);
 
     if(pref_test.isKey("test_enabled") && pref_test.getBool("test_enabled")) {
@@ -72,7 +72,8 @@ void TestMode::test() {
         // Тестирование связи с БД
         WiFi.begin(WIFI_SSID, WIFI_PASSWORD);
 
-        vTaskDelay(3000);
+        for(int i = 0; i < 10 && WiFi.status() != WL_CONNECTED; i++)
+            delay(500);
 
         if(WiFi.status() == WL_CONNECTED) {
             InfluxDBClient client(INFLUXDB_URL, INFLUXDB_ORG, INFLUXDB_BUCKET, INFLUXDB_TOKEN);

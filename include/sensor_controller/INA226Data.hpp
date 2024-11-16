@@ -6,7 +6,9 @@
 #else
 #include "INA226_wokwi.hpp"
 #endif
-
+#ifdef MS_MEASUREMENTS_ENABLE
+#include <esp_timer.h>
+#endif
 #include <ArduinoJson.h>
 
 #define FLOAT_MAP(value, in_min, in_max, out_min, out_max) ((value - in_min) * (out_max - out_min) / (in_max - in_min) + out_min)
@@ -21,6 +23,7 @@ public:
 	float power;
 	float capacity;
 	time_t timestamp;
+	unsigned long long timestamp_ms;
 
 	INA226Data(uint32_t* id) {
 		this->id = id;
@@ -32,11 +35,10 @@ public:
 		this->power = sensor->getPower() * SIGN(this->current);
 		this->capacity = FLOAT_MAP(sensor->getBusVoltage(),3.3,4.2,0.0,100.0);
 		this->timestamp = time(nullptr);
+		#ifdef MS_MEASUREMENTS_ENABLE
+		this->timestamp_ms = this->timestamp * 1000 + (esp_timer_get_time() / 1000) % 1000;
+		#endif
 	};
-
-	// String getJSON() {
-	// 	return "{\"ID\":" + String(this->id) + ", \"V\":" + this->voltage + ", \"A\":" + this->current + ", \"P\":" + this->power + ", \"C\":" + String(this->capacity) + "}";
-	// };
 
 	String getJSON() {
 		// Заполняем JSON-документ
@@ -45,7 +47,11 @@ public:
 		json["A"] = round2(this->current);
 		json["P"] = round2(this->power);
 		json["C"] = round2(this->capacity);
+		#ifdef MS_MEASUREMENTS_ENABLE
+		json["t"] = this->timestamp * 1000 + esp_timer_get_time() / 1000;
+		#else
 		json["T"] = this->timestamp;
+		#endif
 
 		// Конвертируем JSON-документ в строку
 		serializeJson(json, buffer);

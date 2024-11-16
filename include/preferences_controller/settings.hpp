@@ -4,8 +4,8 @@
 #include <freertos/queue.h>
 #include <variant>
 #include <functional>
-#include <unordered_map>
 #include <Preferences.h>
+#include "setting_info.hpp"
 
 // Объявляем все доступные типы переменных
 #define DECLARE_TYPE_LINK(TYPE, F1, F2, ...) TYPE*,
@@ -15,35 +15,26 @@
 #define DECLARE_SETTING_TYPES_VARIANT(TYPES) std::variant<TYPES(DECLARE_TYPE) nullptr_t>
 
 #define DECLARE_GET_ITER(TYPE, F1, F2, PREFERENCES_OBJ, BUFFER_POINTER, SETTING_POINTER) \
-if (SETTING_TYPES[i] == #TYPE) { \
+if (SETTINGS_INFO[i].type == #TYPE) { \
     BUFFER_POINTER = std::get<TYPE*>(SETTING_POINTER); \
-    *(TYPE*)BUFFER_POINTER = PREFERENCES_OBJ.F1(SETTING_NAMES[i]); \
+    *(TYPE*)BUFFER_POINTER = PREFERENCES_OBJ.F1(SETTINGS_INFO[i].name); \
     continue; \
 } 
 
-// #define DECLARE_PUT_ITER(TYPE, F1, F2, PREFERENCES_OBJ, BUFFER_POINTER, SETTING_POINTER) \
-// if(SETTING_TYPES[UPDATE_QUEUE.key] == #TYPE) \
-// { \
-//     buffer = std::get<TYPE*>(SETTING_POINTER); \
-//     PREFERENCES_OBJ.F2(SETTING_NAMES[UPDATE_QUEUE.key], UPDATE_QUEUE.value); \
-//     *(TYPE*)buffer = UPDATE_QUEUE.value; \
-//     continue; \
-// } \
-
 #define DECLARE_UPDATE_ITER(TYPE, F1, F2, PREFERENCES_OBJ, BUFFER_POINTER, SETTING_POINTER, UPDATE_QUEUE) \
-if(SETTING_TYPES[UPDATE_QUEUE.key] == #TYPE) \
+if(SETTINGS_INFO[UPDATE_QUEUE.key].type == #TYPE) \
 { \
     BUFFER_POINTER = std::get<TYPE*>(SETTING_POINTER); \
-    PREFERENCES_OBJ.F2(SETTING_NAMES[UPDATE_QUEUE.key], std::get<TYPE>(UPDATE_QUEUE.value)); \
+    PREFERENCES_OBJ.F2(SETTINGS_INFO[UPDATE_QUEUE.key].name, std::get<TYPE>(UPDATE_QUEUE.value)); \
     *(TYPE*)BUFFER_POINTER = std::get<TYPE>(UPDATE_QUEUE.value); \
     continue; \
 }
 
 #define DECLARE_PUT_DEFAULT_ITER(TYPE, F1, F2, PREFERENCES_OBJ, BUFFER_POINTER, SETTING_POINTER) \
-if(SETTING_TYPES[i] == #TYPE) \
+if(SETTINGS_INFO[i].type == #TYPE) \
 { \
     BUFFER_POINTER = std::get<TYPE*>(SETTING_POINTER); \
-    PREFERENCES_OBJ.F2(SETTING_NAMES[i], *(TYPE*)BUFFER_POINTER); \
+    PREFERENCES_OBJ.F2(SETTINGS_INFO[i].name, *(TYPE*)BUFFER_POINTER); \
     continue; \
 }
 
@@ -70,6 +61,9 @@ for (unsigned short i = 0; i < SETTING_TYPE::SETTINGS_COUNT; i++) { \
 #define REMOVE_TYPE_STR(TYPE, NAME, ...) #NAME,
 #define REMOVE_TYPE_INDEX(TYPE, NAME, ...) #TYPE,
 
+#define DECLARE_SETTING_INFO(TYPE, NAME, REBOOT_IS_REQUIRED, ...) \
+SETTING_INFO {#NAME, #TYPE, REBOOT_IS_REQUIRED},
+
 #define DECLARE_SWITCH_CASE(TYPE, NAME, ...) \
     case SETTING_TYPE::NAME: return &settings.NAME;
 
@@ -84,8 +78,7 @@ for (unsigned short i = 0; i < SETTING_TYPE::SETTINGS_COUNT; i++) { \
         SETTINGS_COUNT \
     }; \
     \
-    constexpr const char* SETTING_NAMES[] = { FIELDS(REMOVE_TYPE_STR) }; \
-    constexpr const char* SETTING_TYPES[] = { FIELDS(REMOVE_TYPE_INDEX) }; \
+    inline SETTING_INFO SETTINGS_INFO[] = { FIELDS(DECLARE_SETTING_INFO) }; \
     \
     inline DECLARE_SETTING_TYPES_LINKS_VARIANT(UNIQUE_SETTINGS_TYPES) \
     getSettingFieldPointer(unsigned short type) { \
@@ -104,20 +97,20 @@ for (unsigned short i = 0; i < SETTING_TYPE::SETTINGS_COUNT; i++) { \
 
 // Определяем поля структуры (тип, название настройки)
 #define SETTINGS_FIELDS(TYPE_AND_NAME, ...) \
-    TYPE_AND_NAME(String, access_key, __VA_ARGS__) \
-    TYPE_AND_NAME(uint32_t, sensor_delay, __VA_ARGS__) \
-    TYPE_AND_NAME(uint32_t, usb_delay, __VA_ARGS__) \
-    TYPE_AND_NAME(uint32_t, wireless_delay, __VA_ARGS__) \
-    TYPE_AND_NAME(uint32_t, display_time, __VA_ARGS__) \
-    TYPE_AND_NAME(String, hostname, __VA_ARGS__) \
-    TYPE_AND_NAME(String, wifi_ssid, __VA_ARGS__) \
-    TYPE_AND_NAME(String, wifi_password, __VA_ARGS__) \
-    TYPE_AND_NAME(uint32_t, mode, __VA_ARGS__) \
-    TYPE_AND_NAME(String, influxdb_url, __VA_ARGS__) \
-    TYPE_AND_NAME(String, influxdb_org, __VA_ARGS__) \
-    TYPE_AND_NAME(String, influxdb_bucket, __VA_ARGS__) \
-    TYPE_AND_NAME(String, influxdb_token, __VA_ARGS__) \
-    TYPE_AND_NAME(uint32_t, battery_id, __VA_ARGS__) 
+    TYPE_AND_NAME(String, access_key, false, __VA_ARGS__) \
+    TYPE_AND_NAME(uint32_t, sensor_delay, false, __VA_ARGS__) \
+    TYPE_AND_NAME(uint32_t, usb_delay, false, __VA_ARGS__) \
+    TYPE_AND_NAME(uint32_t, wireless_delay, false, __VA_ARGS__) \
+    TYPE_AND_NAME(uint32_t, display_time, false, __VA_ARGS__) \
+    TYPE_AND_NAME(String, hostname, false, __VA_ARGS__) \
+    TYPE_AND_NAME(String, wifi_ssid, true, __VA_ARGS__) \
+    TYPE_AND_NAME(String, wifi_password, true, __VA_ARGS__) \
+    TYPE_AND_NAME(uint32_t, mode, true, __VA_ARGS__) \
+    TYPE_AND_NAME(String, influxdb_url, true, __VA_ARGS__) \
+    TYPE_AND_NAME(String, influxdb_org, true, __VA_ARGS__) \
+    TYPE_AND_NAME(String, influxdb_bucket, true, __VA_ARGS__) \
+    TYPE_AND_NAME(String, influxdb_token, true, __VA_ARGS__) \
+    TYPE_AND_NAME(uint32_t, battery_id, true, __VA_ARGS__) 
 
 // Генерируем структуру и enum
 GEN_SETTINGS(SETTINGS, settings, SETTINGS_FIELDS)

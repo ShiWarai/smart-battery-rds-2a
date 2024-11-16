@@ -1,6 +1,6 @@
 #include "wireless_controller/wireless_controller.hpp"
 
-#define DECLARE_DESERIALIZE_ITER(TYPE, NAME, SOURCE_STR, JSON_NAME, SETTINGS_NAME, UPDATE_QUEUE) \
+#define DECLARE_DESERIALIZE_ITER(TYPE, NAME, REBOOT_IS_REQUIRED, SOURCE_STR, JSON_NAME, SETTINGS_NAME, UPDATE_QUEUE) \
 SettingUpdate update_##NAME; \
 if(json[#NAME].is<TYPE>()) { \
 	update_##NAME.key = SETTING_TYPE::NAME; \
@@ -8,7 +8,7 @@ if(json[#NAME].is<TYPE>()) { \
 	xQueueSend(UPDATE_QUEUE, &update_##NAME, portMAX_DELAY); \
 }
 
-#define DECLARE_SERIALIZE_ITER(TYPE, NAME, JSON_NAME, SETTINGS_NAME) \
+#define DECLARE_SERIALIZE_ITER(TYPE, NAME, REBOOT_IS_REQUIRED, JSON_NAME, SETTINGS_NAME) \
 JSON_NAME[#NAME] = SETTINGS_NAME.NAME;
 
 #define GENERATE_DESERIALIZE_CYCLE(SOURCE_STR, JSON_NAME, SETTINGS_NAME, UPDATE_QUEUE, FIELDS) \
@@ -25,9 +25,9 @@ bool WirelessController::deserializeSettings(String json_str)
 		return false;
 
 	// Удаление скрытых полей
-	json.remove(SETTING_NAMES[SETTING_TYPE::access_key]);
+	json.remove(SETTINGS_INFO[SETTING_TYPE::access_key].name);
 	//json.remove(SETTING_NAMES[SETTING_TYPE::wifi_password]);
-	json.remove(SETTING_NAMES[SETTING_TYPE::influxdb_token]);
+	json.remove(SETTINGS_INFO[SETTING_TYPE::influxdb_token].name);
 
 	GENERATE_DESERIALIZE_CYCLE(json_str, json, settings, settingUpdateQueue, SETTINGS_FIELDS)
 	vTaskDelay(100);
@@ -43,9 +43,9 @@ String WirelessController::serializeSettings()
 	GENERATE_SERIALIZE_CYCLE(json, settings, SETTINGS_FIELDS)
 
 	// Удаление скрытых полей
-	json.remove(SETTING_NAMES[SETTING_TYPE::access_key]);
+	json.remove(SETTINGS_INFO[SETTING_TYPE::access_key].name);
 	//json.remove(SETTING_NAMES[SETTING_TYPE::wifi_password]);
-	json.remove(SETTING_NAMES[SETTING_TYPE::influxdb_token]);
+	json.remove(SETTINGS_INFO[SETTING_TYPE::influxdb_token].name);
 	
 	serializeJson(json, json_str);
 	return json_str;
@@ -56,7 +56,7 @@ String WirelessController::serializeTestingResult() {
 	Preferences pref_test;
 	JsonDocument json;
 
-	pref_test.begin("testing", false);
+	pref_test.begin(TESTING_SPACE_NAME, false);
 
 	json["buzzer"] = pref_test.getBool("buzzer");
     json["display"] = pref_test.getBool("display");
@@ -146,7 +146,7 @@ void WirelessController::wirelessTask(void *pvParameters)
 			if (request->hasHeader("api_key") && request->header("api_key") == settings.access_key)
 			{
 				Preferences pref_test;
-                pref_test.begin("testing", false);
+                pref_test.begin(TESTING_SPACE_NAME, false);
                 pref_test.putBool("test_enabled", true);
                 pref_test.end();
 

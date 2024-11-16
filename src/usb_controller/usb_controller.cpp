@@ -109,7 +109,7 @@ void UsbController::comMenu() {
                 outputInfo();
                 break;
             case 3:
-                pref_test.begin("testing", false);
+                pref_test.begin(TESTING_SPACE_NAME, false);
                 pref_test.putBool("test_enabled", true);
                 pref_test.end();
                 ESP.restart();
@@ -139,7 +139,7 @@ void UsbController::outputInfo() {
 
 #define GENERATE_SERIAL_INPUT_CASE(TYPE, NAME, VALIDATOR_FUNC, BUFFER, UPDATE_QUEUE, UPDATE) \
 case NAME: \
-    Serial.printf("\r\nВведите новый %s: ", SETTING_NAMES[NAME]);\
+    Serial.printf("\r\nВведите новый %s: ", SETTINGS_INFO[NAME].name);\
     if(read_##TYPE(&BUFFER, VALIDATOR_FUNC) != 0) { \
         Serial.println("\r\nОшибка ввода"); \
         break; \
@@ -147,7 +147,11 @@ case NAME: \
     update.value = BUFFER; \
     update.key = NAME; \
     xQueueSend(UPDATE_QUEUE, &UPDATE, portMAX_DELAY); \
-    vTaskDelay(100); \
+    if(SETTINGS_INFO[NAME].reboot_is_required) { \
+        vTaskDelay(1000); \
+        ESP.restart(); \
+    } else \
+        vTaskDelay(100); \
     break;
 
 void UsbController::settingsMenu() {
@@ -182,32 +186,8 @@ void UsbController::settingsMenu() {
             GENERATE_SERIAL_INPUT_CASE(String, SETTING_TYPE::influxdb_bucket, nullptr, buffer_String, settingUpdateQueue, update)
             GENERATE_SERIAL_INPUT_CASE(String, SETTING_TYPE::influxdb_token, nullptr, buffer_String, settingUpdateQueue, update)
             GENERATE_SERIAL_INPUT_CASE(uint32_t, SETTING_TYPE::battery_id, validate_id, buffer_uint32_t, settingUpdateQueue, update)
-            case SETTING_TYPE::hostname:
-                Serial.printf("\r\nВведите новый %s: ", SETTING_NAMES[SETTING_TYPE::hostname]);
-
-                if(read_String(&buffer_String, 0) != 0)
-                    break;
-
-                update.value = buffer_String;
-                update.key = SETTING_TYPE::hostname;
-                xQueueSend(settingUpdateQueue, &update, portMAX_DELAY); 
-                vTaskDelay(1000);
-                ESP.restart(); // Перезапуск ESP32
-                break;
-            case SETTING_TYPE::mode:
-                Serial.printf("\r\nВведите новый %s: ", SETTING_NAMES[SETTING_TYPE::mode]);
-
-                if(read_uint32_t(&buffer_uint32_t, validate_uint) != 0)
-                    break;
-
-                update.value = buffer_uint32_t;
-                update.key = SETTING_TYPE::mode;
-
-                xQueueSend(settingUpdateQueue, &update, portMAX_DELAY); 
-                vTaskDelay(1000);
-                ESP.restart();
-
-                break;
+            GENERATE_SERIAL_INPUT_CASE(String, SETTING_TYPE::hostname, nullptr, buffer_String, settingUpdateQueue, update)
+            GENERATE_SERIAL_INPUT_CASE(uint32_t, SETTING_TYPE::mode, validate_uint, buffer_uint32_t, settingUpdateQueue, update)
             default:
                 clearInputBuffer();
 				return;
