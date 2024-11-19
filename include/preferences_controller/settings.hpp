@@ -115,7 +115,7 @@ SETTING_INFO {#NAME, #TYPE, REBOOT_IS_REQUIRED},
 // Генерируем структуру и enum
 GEN_SETTINGS(SETTINGS, settings, SETTINGS_FIELDS)
 
-enum BATTERY_MODS {
+enum BATTERY_MODS { 
     POWERSAVE,
     FULL
 };

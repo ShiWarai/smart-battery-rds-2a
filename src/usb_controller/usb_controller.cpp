@@ -96,9 +96,12 @@ void UsbController::comMenu() {
         Serial.println("1) Настройки");
         Serial.println("2) Вывести информацию о системе");
         Serial.println("3) Тест");
-        Serial.println("4) Рестарт");
-        Serial.println("5) Сброс(очистка памяти + рестарт)");
+        Serial.println("4) Результаты теста");
+        Serial.println("5) Рестарт");
+        Serial.println("6) Сброс(очистка памяти + рестарт)");
         Serial.println("0) Выйти");
+        
+        IntegrationTestResult results = UnitedControl::readTestResults();
         
         read_uint32_t(&buffer_num);
         switch (buffer_num) {
@@ -109,15 +112,21 @@ void UsbController::comMenu() {
                 outputInfo();
                 break;
             case 3:
-                pref_test.begin(TESTING_SPACE_NAME, false);
-                pref_test.putBool("test_enabled", true);
-                pref_test.end();
-                ESP.restart();
+                UnitedControl::startTest();
                 break;
             case 4:
-                ESP.restart();
+                Serial.println("Результаты тестирования:");
+
+                Serial.print("Buzzer test: "); Serial.println(results.buzzerTest ? "Passed" : "Failed"); 
+                Serial.print("Display test: "); Serial.println(results.displayTest ? "Passed" : "Failed"); 
+                Serial.print("INA226 test: "); Serial.println(results.ina226Test ? "Passed" : "Failed"); 
+                Serial.print("WiFi test: "); Serial.println(results.wifiTest ? "Passed" : "Failed"); 
+                Serial.print("Database test: "); Serial.println(results.databaseTest ? "Passed" : "Failed");
                 break;
             case 5:
+                ESP.restart();
+                break;
+            case 6:
 				nvs_flash_erase();
 				nvs_flash_init();
                 ESP.restart();

@@ -99,3 +99,20 @@ void TestMode::test() {
     else
         pref_test.end();
 }
+
+IntegrationTestResult TestMode::getTestResults() {
+    IntegrationTestResult result;
+    Preferences pref_test;
+
+	pref_test.begin(TESTING_SPACE_NAME, false);
+
+	result.buzzerTest = pref_test.getBool("buzzer");
+    result.displayTest = pref_test.getBool("display");
+    result.ina226Test = pref_test.getBool("INA226");
+    result.wifiTest = pref_test.getBool("wifi");
+	result.databaseTest = pref_test.getBool("database");
+
+	pref_test.end();
+
+    return result;
+}

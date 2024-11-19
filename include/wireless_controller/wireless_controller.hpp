@@ -6,6 +6,8 @@
 #include <ESPmDNS.h>
 #include "preferences_controller/settings.hpp"
 #include "sensor_controller/INA226Data.hpp"
+#include "test_mode/integration_test_result.hpp"
+#include "united_control/united_control.hpp"
 
 #define TZ_INFO "UTC-3"
 

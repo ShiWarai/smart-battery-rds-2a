@@ -1,0 +1,32 @@
+#include "united_control/united_control.hpp"
+
+void UnitedControl::writeToMemory(std::variant<String, float, uint32_t, nullptr_t> BUFFER, SETTING_TYPE NAME) {
+    SettingUpdate update;
+    update.value = BUFFER; 
+    update.key = NAME; 
+    xQueueSend(settingUpdateQueue, &update, portMAX_DELAY); 
+    if(SETTINGS_INFO[NAME].reboot_is_required) { 
+        vTaskDelay(1000); 
+        ESP.restart(); 
+    } else 
+        vTaskDelay(100); 
+}
+
+void UnitedControl::startTest(bool needRestart) {
+    Preferences pref_test;
+
+    pref_test.begin(TESTING_SPACE_NAME, false);
+    pref_test.putBool("test_enabled", true);
+    pref_test.end();
+
+    if(needRestart)
+        UnitedControl::restartSystem();
+}
+
+IntegrationTestResult UnitedControl::readTestResults() {
+    return TestMode::getTestResults();
+}
+
+void UnitedControl::restartSystem(){
+    ESP.restart();
+}

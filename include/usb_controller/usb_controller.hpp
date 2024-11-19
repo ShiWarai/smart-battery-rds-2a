@@ -7,7 +7,8 @@
 #include "preferences_controller/settings.hpp"
 #include "sensor_controller/INA226Data.hpp"
 #include "usb_controller/validators.hpp"
-
+#include "test_mode/integration_test_result.hpp"
+#include "united_control/united_control.hpp"
 
 #define DECLARE_SERIAL_PRINT_ITER(TYPE, F1, F2, SETTING_POINTER) \
 if(SETTINGS_INFO[i].type == #TYPE) \

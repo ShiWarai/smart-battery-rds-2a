@@ -9,11 +9,13 @@
 #endif
 #include <WiFi.h>
 #include <InfluxDbClient.h>
-
+#include "test_mode/integration_test_result.hpp"
 #include "preferences_controller/settings.hpp"
+
 
 class TestMode
 {
 public:
     static void test();
+    static IntegrationTestResult getTestResults();
 };

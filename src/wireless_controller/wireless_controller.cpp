@@ -44,7 +44,6 @@ String WirelessController::serializeSettings()
 
 	// Удаление скрытых полей
 	json.remove(SETTINGS_INFO[SETTING_TYPE::access_key].name);
-	//json.remove(SETTING_NAMES[SETTING_TYPE::wifi_password]);
 	json.remove(SETTINGS_INFO[SETTING_TYPE::influxdb_token].name);
 	
 	serializeJson(json, json_str);
@@ -53,18 +52,14 @@ String WirelessController::serializeSettings()
 
 String WirelessController::serializeTestingResult() {
 	String json_str;
-	Preferences pref_test;
 	JsonDocument json;
+	IntegrationTestResult result = UnitedControl::readTestResults();
 
-	pref_test.begin(TESTING_SPACE_NAME, false);
-
-	json["buzzer"] = pref_test.getBool("buzzer");
-    json["display"] = pref_test.getBool("display");
-    json["INA226"] = pref_test.getBool("INA226");
-    json["wifi"] = pref_test.getBool("wifi");
-	json["database"] = pref_test.getBool("database");
-
-	pref_test.end();
+	json["buzzer"] = result.buzzerTest;
+    json["display"] = result.displayTest;
+    json["INA226"] = result.ina226Test;
+    json["wifi"] = result.wifiTest;
+	json["database"] = result.databaseTest;
 
 	serializeJson(json, json_str);
 	return json_str;
@@ -145,17 +140,14 @@ void WirelessController::wirelessTask(void *pvParameters)
 		[](AsyncWebServerRequest *request) {
 			if (request->hasHeader("api_key") && request->header("api_key") == settings.access_key)
 			{
-				Preferences pref_test;
-                pref_test.begin(TESTING_SPACE_NAME, false);
-                pref_test.putBool("test_enabled", true);
-                pref_test.end();
+				UnitedControl::startTest(false);
 
 				request->send(200, "application/json", "{\"message\":\"Restart ESP32 to start testing...\"}");
 			}
 			else
 				request->send(403, "application/json", "{\"error\":\"Invalid access key\"}");
 
-			ESP.restart();
+			UnitedControl::restartSystem();
 		}
 	);
 
