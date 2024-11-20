@@ -1,11 +1,11 @@
 #include "united_control/united_control.hpp"
 
-void UnitedControl::writeToMemory(std::variant<String, float, uint32_t, nullptr_t> BUFFER, SETTING_TYPE NAME) {
+void UnitedControl::writeToMemory(std::variant<String, float, uint32_t, nullptr_t> buffer, SETTING_TYPE name) {
     SettingUpdate update;
-    update.value = BUFFER; 
-    update.key = NAME; 
+    update.value = buffer; 
+    update.key = name; 
     xQueueSend(settingUpdateQueue, &update, portMAX_DELAY); 
-    if(SETTINGS_INFO[NAME].reboot_is_required) { 
+    if(SETTINGS_INFO[name].reboot_is_required) { 
         vTaskDelay(1000); 
         ESP.restart(); 
     } else 

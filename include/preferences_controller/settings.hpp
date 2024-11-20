@@ -6,6 +6,7 @@
 #include <functional>
 #include <Preferences.h>
 #include "setting_info.hpp"
+#include "preferences_validators.hpp"
 
 // Объявляем все доступные типы переменных
 #define DECLARE_TYPE_LINK(TYPE, F1, F2, ...) TYPE*,
@@ -61,8 +62,8 @@ for (unsigned short i = 0; i < SETTING_TYPE::SETTINGS_COUNT; i++) { \
 #define REMOVE_TYPE_STR(TYPE, NAME, ...) #NAME,
 #define REMOVE_TYPE_INDEX(TYPE, NAME, ...) #TYPE,
 
-#define DECLARE_SETTING_INFO(TYPE, NAME, REBOOT_IS_REQUIRED, ...) \
-SETTING_INFO {#NAME, #TYPE, REBOOT_IS_REQUIRED},
+#define DECLARE_SETTING_INFO(TYPE, NAME, REBOOT_IS_REQUIRED, INPUT_VALIDATOR, ...) \
+SETTING_INFO {#NAME, #TYPE, REBOOT_IS_REQUIRED, INPUT_VALIDATOR},
 
 #define DECLARE_SWITCH_CASE(TYPE, NAME, ...) \
     case SETTING_TYPE::NAME: return &settings.NAME;
@@ -97,20 +98,20 @@ SETTING_INFO {#NAME, #TYPE, REBOOT_IS_REQUIRED},
 
 // Определяем поля структуры (тип, название настройки)
 #define SETTINGS_FIELDS(TYPE_AND_NAME, ...) \
-    TYPE_AND_NAME(String, access_key, false, __VA_ARGS__) \
-    TYPE_AND_NAME(uint32_t, sensor_delay, false, __VA_ARGS__) \
-    TYPE_AND_NAME(uint32_t, usb_delay, false, __VA_ARGS__) \
-    TYPE_AND_NAME(uint32_t, wireless_delay, false, __VA_ARGS__) \
-    TYPE_AND_NAME(uint32_t, display_time, false, __VA_ARGS__) \
-    TYPE_AND_NAME(String, hostname, false, __VA_ARGS__) \
-    TYPE_AND_NAME(String, wifi_ssid, true, __VA_ARGS__) \
-    TYPE_AND_NAME(String, wifi_password, true, __VA_ARGS__) \
-    TYPE_AND_NAME(uint32_t, mode, true, __VA_ARGS__) \
-    TYPE_AND_NAME(String, influxdb_url, true, __VA_ARGS__) \
-    TYPE_AND_NAME(String, influxdb_org, true, __VA_ARGS__) \
-    TYPE_AND_NAME(String, influxdb_bucket, true, __VA_ARGS__) \
-    TYPE_AND_NAME(String, influxdb_token, true, __VA_ARGS__) \
-    TYPE_AND_NAME(uint32_t, battery_id, true, __VA_ARGS__) 
+    TYPE_AND_NAME(String, access_key, false, NULL, __VA_ARGS__) \
+    TYPE_AND_NAME(uint32_t, sensor_delay, false, validate_uint, __VA_ARGS__) \
+    TYPE_AND_NAME(uint32_t, usb_delay, false, validate_uint, __VA_ARGS__) \
+    TYPE_AND_NAME(uint32_t, wireless_delay, false, validate_uint, __VA_ARGS__) \
+    TYPE_AND_NAME(uint32_t, display_time, false, validate_uint, __VA_ARGS__) \
+    TYPE_AND_NAME(String, hostname, false, NULL, __VA_ARGS__) \
+    TYPE_AND_NAME(String, wifi_ssid, true, NULL, __VA_ARGS__) \
+    TYPE_AND_NAME(String, wifi_password, true, NULL, __VA_ARGS__) \
+    TYPE_AND_NAME(uint32_t, mode, true, validate_uint, __VA_ARGS__) \
+    TYPE_AND_NAME(String, influxdb_url, true, NULL, __VA_ARGS__) \
+    TYPE_AND_NAME(String, influxdb_org, true, NULL, __VA_ARGS__) \
+    TYPE_AND_NAME(String, influxdb_bucket, true, NULL, __VA_ARGS__) \
+    TYPE_AND_NAME(String, influxdb_token, true, NULL, __VA_ARGS__) \
+    TYPE_AND_NAME(uint32_t, battery_id, true, validate_id, __VA_ARGS__) 
 
 // Генерируем структуру и enum
 GEN_SETTINGS(SETTINGS, settings, SETTINGS_FIELDS)

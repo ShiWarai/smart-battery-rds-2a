@@ -115,7 +115,7 @@ void UsbController::comMenu() {
                 UnitedControl::startTest();
                 break;
             case 4:
-                Serial.println("Результаты тестирования:");
+                Serial.println("\r\nРезультаты тестирования:");
 
                 Serial.print("Buzzer test: "); Serial.println(results.buzzerTest ? "Passed" : "Failed"); 
                 Serial.print("Display test: "); Serial.println(results.displayTest ? "Passed" : "Failed"); 
@@ -143,31 +143,9 @@ void UsbController::outputInfo() {
     Serial.printf("\r\nАккумулятор #%d\r\n", settings.battery_id);
 
     Serial.printf("Текущий IP: %s\r\n", WiFi.localIP().toString());
-    Serial.printf("Текущая частота: %d\r\n", getCpuFrequencyMhz());
 }
 
-#define GENERATE_SERIAL_INPUT_CASE(TYPE, NAME, VALIDATOR_FUNC, BUFFER, UPDATE_QUEUE, UPDATE) \
-case NAME: \
-    Serial.printf("\r\nВведите новый %s: ", SETTINGS_INFO[NAME].name);\
-    if(read_##TYPE(&BUFFER, VALIDATOR_FUNC) != 0) { \
-        Serial.println("\r\nОшибка ввода"); \
-        break; \
-    } \
-    update.value = BUFFER; \
-    update.key = NAME; \
-    xQueueSend(UPDATE_QUEUE, &UPDATE, portMAX_DELAY); \
-    if(SETTINGS_INFO[NAME].reboot_is_required) { \
-        vTaskDelay(1000); \
-        ESP.restart(); \
-    } else \
-        vTaskDelay(100); \
-    break;
-
 void UsbController::settingsMenu() {
-    uint32_t buffer_uint32_t;
-    float buffer_float;
-    String buffer_String;
-
     DECLARE_SETTING_TYPES_VARIANT(UNIQUE_SETTINGS_TYPES) buffer;
     DECLARE_SETTING_TYPES_LINKS_VARIANT(UNIQUE_SETTINGS_TYPES) setting_field;
 
@@ -179,28 +157,8 @@ void UsbController::settingsMenu() {
 
         GEN_SETTINGS_OUTPUT_DEFAULT(setting_field, UNIQUE_SETTINGS_TYPES)
         Serial.println("0) Назад");
-        
-        read_uint32_t(&buffer_uint32_t);
-        switch (buffer_uint32_t-1) {
-            // Генерируем типовые кейсы
-            GENERATE_SERIAL_INPUT_CASE(String, SETTING_TYPE::access_key, nullptr, buffer_String, settingUpdateQueue, update)
-            GENERATE_SERIAL_INPUT_CASE(uint32_t, SETTING_TYPE::sensor_delay, validate_uint, buffer_uint32_t, settingUpdateQueue, update)
-            GENERATE_SERIAL_INPUT_CASE(uint32_t, SETTING_TYPE::usb_delay, validate_uint, buffer_uint32_t, settingUpdateQueue, update)
-            GENERATE_SERIAL_INPUT_CASE(uint32_t, SETTING_TYPE::wireless_delay, validate_uint, buffer_uint32_t, settingUpdateQueue, update)
-            GENERATE_SERIAL_INPUT_CASE(uint32_t, SETTING_TYPE::display_time, validate_uint, buffer_uint32_t, settingUpdateQueue, update)
-            GENERATE_SERIAL_INPUT_CASE(String, SETTING_TYPE::wifi_ssid, nullptr, buffer_String, settingUpdateQueue, update)
-            GENERATE_SERIAL_INPUT_CASE(String, SETTING_TYPE::wifi_password, nullptr, buffer_String, settingUpdateQueue, update)
-            GENERATE_SERIAL_INPUT_CASE(String, SETTING_TYPE::influxdb_url, nullptr, buffer_String, settingUpdateQueue, update)
-            GENERATE_SERIAL_INPUT_CASE(String, SETTING_TYPE::influxdb_org, nullptr, buffer_String, settingUpdateQueue, update)
-            GENERATE_SERIAL_INPUT_CASE(String, SETTING_TYPE::influxdb_bucket, nullptr, buffer_String, settingUpdateQueue, update)
-            GENERATE_SERIAL_INPUT_CASE(String, SETTING_TYPE::influxdb_token, nullptr, buffer_String, settingUpdateQueue, update)
-            GENERATE_SERIAL_INPUT_CASE(uint32_t, SETTING_TYPE::battery_id, validate_id, buffer_uint32_t, settingUpdateQueue, update)
-            GENERATE_SERIAL_INPUT_CASE(String, SETTING_TYPE::hostname, nullptr, buffer_String, settingUpdateQueue, update)
-            GENERATE_SERIAL_INPUT_CASE(uint32_t, SETTING_TYPE::mode, validate_uint, buffer_uint32_t, settingUpdateQueue, update)
-            default:
-                clearInputBuffer();
-				return;
-        }
+
+        GENERATE_SERIAL_INPUTS(settingUpdateQueue, update, SETTINGS_FIELDS)
     }
 }
 

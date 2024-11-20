@@ -9,14 +9,12 @@
 #include "test_mode/integration_test_result.hpp"
 #include "united_control/united_control.hpp"
 
-#define TZ_INFO "UTC-3"
-
 class WirelessController
 {
 public:
     static void wirelessTask(void *pvParameters);
 private:
-    static bool deserializeSettings(String json_str);
+    static bool deserializeSettings(String json_str, bool &needReboot);
     static String serializeSettings();
     static String serializeTestingResult();
 };
