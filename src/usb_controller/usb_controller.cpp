@@ -42,6 +42,7 @@ error_t UsbController::read_String(String *str, error_t validator(String) = null
             return error;
         }
     } else {
+        buffer.trim();
         *str = buffer;
         return 0;
     }
@@ -81,7 +82,7 @@ error_t UsbController::read_float(float *num, error_t validator(String) = nullpt
         }
     } else 
     {
-        *num = buffer.toInt();
+        *num = buffer.toFloat();
         return 0;
     }
 }
