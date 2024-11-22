@@ -24,7 +24,7 @@ void UnitedControl::startTest(bool needRestart) {
 }
 
 IntegrationTestResult UnitedControl::readTestResults() {
-    return TestMode::getTestResults();
+    return SelfChecking::getIntegrationTestResults();
 }
 
 void UnitedControl::restartSystem(){

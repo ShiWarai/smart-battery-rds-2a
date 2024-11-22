@@ -3,7 +3,7 @@
 #include <WiFi.h>
 #include "sensor_controller/INA226Data.hpp"
 #include "preferences_controller/settings.hpp"
-#include "test_mode/test_mode.hpp"
+#include "self_checking/self_checking.hpp"
 
 class UnitedControl
 {

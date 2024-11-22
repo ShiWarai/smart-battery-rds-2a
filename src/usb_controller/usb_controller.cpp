@@ -118,11 +118,11 @@ void UsbController::comMenu() {
             case 4:
                 Serial.println("\r\nРезультаты тестирования:");
 
-                Serial.print("Buzzer test: "); Serial.println(results.buzzerTest ? "Passed" : "Failed"); 
-                Serial.print("Display test: "); Serial.println(results.displayTest ? "Passed" : "Failed"); 
-                Serial.print("INA226 test: "); Serial.println(results.ina226Test ? "Passed" : "Failed"); 
-                Serial.print("WiFi test: "); Serial.println(results.wifiTest ? "Passed" : "Failed"); 
-                Serial.print("Database test: "); Serial.println(results.databaseTest ? "Passed" : "Failed");
+                Serial.print("Buzzer integrationTest: "); Serial.println(results.buzzerTest ? "Passed" : "Failed"); 
+                Serial.print("Display integrationTest: "); Serial.println(results.displayTest ? "Passed" : "Failed"); 
+                Serial.print("INA226 integrationTest: "); Serial.println(results.ina226Test ? "Passed" : "Failed"); 
+                Serial.print("WiFi integrationTest: "); Serial.println(results.wifiTest ? "Passed" : "Failed"); 
+                Serial.print("Database integrationTest: "); Serial.println(results.databaseTest ? "Passed" : "Failed");
                 break;
             case 5:
                 ESP.restart();

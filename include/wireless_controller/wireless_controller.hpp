@@ -6,7 +6,7 @@
 #include <ESPmDNS.h>
 #include "preferences_controller/settings.hpp"
 #include "sensor_controller/INA226Data.hpp"
-#include "test_mode/integration_test_result.hpp"
+#include "self_checking/self_checking.hpp"
 #include "united_control/united_control.hpp"
 
 class WirelessController

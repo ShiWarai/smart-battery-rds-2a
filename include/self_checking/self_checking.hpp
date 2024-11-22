@@ -9,13 +9,15 @@
 #endif
 #include <WiFi.h>
 #include <InfluxDbClient.h>
-#include "test_mode/integration_test_result.hpp"
+#include "self_checking/test_result.hpp"
 #include "preferences_controller/settings.hpp"
 
 
-class TestMode
+class SelfChecking
 {
 public:
-    static void test();
-    static IntegrationTestResult getTestResults();
+    static void integrationTest();
+    static IntegrationTestResult getIntegrationTestResults();
+private:
+    inline static const char* TAG = "self_checking";
 };

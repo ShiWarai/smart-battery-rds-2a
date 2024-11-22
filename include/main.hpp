@@ -9,7 +9,7 @@
 #ifdef WITH_DISPLAY
 #include <display_controller/display_controller.hpp>
 #endif
-#include <test_mode/test_mode.hpp>
+#include <self_checking/self_checking.hpp>
 
 // Functions
 void setup();

@@ -1,12 +1,12 @@
-#include "test_mode/test_mode.hpp"
+#include "self_checking/self_checking.hpp"
 
-void TestMode::test() {
+void SelfChecking::integrationTest() {
     Preferences pref_test;
     
     pref_test.begin(TESTING_SPACE_NAME, false);
-    Serial.begin(115200);
 
     if(pref_test.isKey("test_enabled") && pref_test.getBool("test_enabled")) {
+        ESP_LOGI(TAG, "Начало тестирования");
         // Установка дефолтных значений
         pref_test.putBool("buzzer", false);
         pref_test.putBool("display", false);
@@ -100,7 +100,7 @@ void TestMode::test() {
         pref_test.end();
 }
 
-IntegrationTestResult TestMode::getTestResults() {
+IntegrationTestResult SelfChecking::getIntegrationTestResults() {
     IntegrationTestResult result;
     Preferences pref_test;
 
