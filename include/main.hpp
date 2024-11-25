@@ -1,7 +1,6 @@
 #pragma once
 
 #include <Arduino.h>
-
 #include <preferences_controller/preferences_controller.hpp>
 #include <sensor_controller/sensor_controller.hpp>
 #include <wireless_controller/wireless_controller.hpp>

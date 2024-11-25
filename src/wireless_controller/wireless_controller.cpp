@@ -26,6 +26,33 @@ FIELDS(DECLARE_DESERIALIZE_ITER, SOURCE_STR, JSON_NAME, SETTINGS_NAME, UPDATE_QU
 #define GENERATE_SERIALIZE_CYCLE(JSON_NAME, SETTINGS_NAME, FIELDS) \
 FIELDS(DECLARE_SERIALIZE_ITER, JSON_NAME, SETTINGS_NAME)
 
+unsigned long ota_progress_millis = 0;
+
+void onOTAStart() {
+  // Log when OTA has started
+  Serial.println("OTA update started!");
+  // <Add your own code here>
+}
+
+void onOTAProgress(size_t current, size_t final) {
+  // Log every 1 second
+  if (millis() - ota_progress_millis > 1000) {
+    ota_progress_millis = millis();
+    Serial.printf("OTA Progress Current: %u bytes, Final: %u bytes\n", current, final);
+  }
+}
+
+void onOTAEnd(bool success) {
+  // Log when OTA has finished
+  if (success) {
+    Serial.println("OTA update finished successfully!");
+  } else {
+    Serial.println("There was an error during OTA update!");
+  }
+  // <Add your own code here>
+}
+
+
 bool WirelessController::deserializeSettings(String json_str, bool &needReboot)
 {
 	JsonDocument json;
@@ -190,7 +217,14 @@ void WirelessController::wirelessTask(void *pvParameters)
 		}
 	);
 
+	ElegantOTA.begin(&server);
+
+	ElegantOTA.onStart(onOTAStart);
+	ElegantOTA.onProgress(onOTAProgress);
+	ElegantOTA.onEnd(onOTAEnd);
+
 	server.begin(); // Запускаем сервер
+	
 
 	// Настраиваем работу с СУБД
 	Point data_point("battery");

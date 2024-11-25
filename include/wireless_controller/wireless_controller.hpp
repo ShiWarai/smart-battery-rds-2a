@@ -2,6 +2,7 @@
 
 #include <WiFi.h>
 #include <ESPAsyncWebServer.h>
+#include <ElegantOTA.h>
 #include <InfluxDbClient.h>
 #include <ESPmDNS.h>
 #include "preferences_controller/settings.hpp"
