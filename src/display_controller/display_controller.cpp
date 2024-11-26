@@ -7,9 +7,11 @@ void DisplayController::displayTask(void *pvParameters) {
 	U8G2_SSD1306_64X32_1F_F_HW_I2C oled = U8G2_SSD1306_64X32_1F_F_HW_I2C(U8G2_R0, U8X8_PIN_NONE, OLED_SCL, OLED_SDA);
 
 	bool display_enabled = false;
+	unsigned long current_time;
+	unsigned long display_shutdown_timer;
+	unsigned long history_update_timer;
     const int display_frequency = 200;
-	uint16_t screen;
-	DisplayController::lastUpdtHistTime = millis();
+	SCREEN_MODE screen_mode = settings.mode == BATTERY_MOD::FULL ? SCREEN_MODE::MAIN : SCREEN_MODE::NONE;
 
 	Button display_button(BUTTONS_PIN, INPUT);
 	pinMode(OLED_PWR_PIN, OUTPUT);
@@ -19,66 +21,79 @@ void DisplayController::displayTask(void *pvParameters) {
 	oled.begin();
 	digitalWrite(OLED_PWR_PIN, LOW);
 
-	switch(settings.mode)
-	{
-	case BATTERY_MODS::POWERSAVE:
-		while(true) {
-			display_button.tick();
+	unsigned long last_time = millis();
+	while(true) {
+		display_button.tick();
+		current_time = millis();
+
+		if(settings.mode == BATTERY_MOD::POWERSAVE) {
+			display_shutdown_timer += (current_time - last_time);
+			
+			if(display_shutdown_timer >= settings.display_time)
+				screen_mode = SCREEN_MODE::NONE;
+		}
+
+		history_update_timer += (current_time - last_time);
+		if(history_update_timer >= 1000)
 			updatingHistory(*raw_data);
 
-			if(display_button.holdFor(CHANGE_MODE_HOLD_TIME))
-				invertMode();
+		last_time = current_time;
 
-			else if(display_button.click()) // Сейчас горит всегда
-			{
-				if(!display_enabled) {
-					if (xSemaphoreTake(wireMutex, portMAX_DELAY) == pdTRUE) // Забираем управление I2C и делаем перезапуск датчика
-					{
-						DisplayController::turnOnDisplay(&oled);
+		if(display_button.holdFor(CHANGE_MODE_HOLD_TIME))
+			invertMode();
 
-						xSemaphoreGive(wireMutex);
-						vTaskDelay(1);
-						
-						display_enabled = true;
+		if(display_button.click()) {
+			screen_mode = (SCREEN_MODE) ((screen_mode + 1) % SCREEN_MODE::COUNT);
+
+			switch(settings.mode) {
+				case BATTERY_MOD::POWERSAVE:
+					if(screen_mode > SCREEN_MODE::NONE && !display_enabled) {
+						if (xSemaphoreTake(wireMutex, portMAX_DELAY) == pdTRUE) // Забираем управление I2C и делаем перезапуск датчика
+						{
+							DisplayController::turnOnDisplay(&oled);
+
+							xSemaphoreGive(wireMutex);
+							vTaskDelay(1);
+							
+							display_enabled = true;
+						}
 					}
-				}
 
-				screen=0;
-
-				for(int i = 0; i < (settings.display_time/display_frequency); i++)
-				{
-					updatingHistory(*raw_data);
-					display_button.tick();
-					if(display_button.click()){screen++;i=0;}
-					if (xSemaphoreTake(wireMutex, portMAX_DELAY) == pdTRUE)
-					{
-						screenSwitch(&oled, screen);
-						
-						xSemaphoreGive(wireMutex);
-						vTaskDelay(display_frequency);
-					}
-				}
-			} else if (display_enabled) {
-				DisplayController::turnOffDisplay(&oled);
-				display_enabled = false;
+					display_shutdown_timer = 0;
+					break;
+				case BATTERY_MOD::FULL:
+					if(screen_mode == SCREEN_MODE::NONE)
+						screen_mode = SCREEN_MODE::MAIN;
+					break;
 			}
 		}
-	case BATTERY_MODS::FULL:
-		while(true) {
-			display_button.tick();
-			updatingHistory(*raw_data);
 
-			if(display_button.holdFor(CHANGE_MODE_HOLD_TIME))
-				invertMode();
+		if(screen_mode != SCREEN_MODE::NONE) {
+			if (xSemaphoreTake(wireMutex, portMAX_DELAY) == pdTRUE) {
+				switch(screen_mode) {
+					case SCREEN_MODE::MAIN:
+						DisplayController::printStatus(&oled, *raw_data);
+						break;
+					case SCREEN_MODE::WIFI: 
+						DisplayController::printSecondMenu(&oled, *raw_data);
+						break;
+					case SCREEN_MODE::CHART: 
+						DisplayController::printHistoryMenu(&oled, *raw_data, 1);
+						break;
+					default:
+						break;
+				}
 
-			if(display_button.click()){screen++;}
-
-			if (xSemaphoreTake(wireMutex, portMAX_DELAY) == pdTRUE)
-			{
-				screenSwitch(&oled, screen);
 				xSemaphoreGive(wireMutex);
 				vTaskDelay(display_frequency);
 			}
+		} else {
+			if (display_enabled) {
+				DisplayController::turnOffDisplay(&oled);
+				display_enabled = false;
+			}
+			
+			vTaskDelay(100);
 		}
 	}
 }
@@ -105,15 +120,6 @@ void DisplayController::turnOnDisplay(U8G2_SSD1306_64X32_1F_F_HW_I2C *oled) {
 void DisplayController::turnOffDisplay(U8G2_SSD1306_64X32_1F_F_HW_I2C *oled) {
 	oled->clearDisplay();
 	digitalWrite(OLED_PWR_PIN, LOW);	
-}
-
-void DisplayController::screenSwitch(U8G2_SSD1306_64X32_1F_F_HW_I2C *oled, uint16_t screen) {
-	switch(screen%4) {
-		case 0: DisplayController::printStatus(oled, *raw_data); break;
-		case 1: DisplayController::printSecondMenu(oled, *raw_data); break;
-		case 2: DisplayController::printHistoryMenu(oled, *raw_data, 0); break;
-		case 3: DisplayController::printHistoryMenu(oled, *raw_data, 1); break;
-	}
 }
 
 void DisplayController::printStatus(U8G2_SSD1306_64X32_1F_F_HW_I2C *oled, INA226Data data, bool changeContrast, byte contrast) // routine for printing simple interface on an OLED display
@@ -261,11 +267,9 @@ void DisplayController::printHistoryMenu(U8G2_SSD1306_64X32_1F_F_HW_I2C *oled, I
 }
 
 void DisplayController::updatingHistory(INA226Data data){
-	if(millis()-DisplayController::lastUpdtHistTime>=1000){
-		for(int i=60-1;i>0;i--){//сдвиг
-			DisplayController::powerHistory[i]=DisplayController::powerHistory[i-1];
-		}
-		DisplayController::powerHistory[0]=data.power;//запись нового значения
-		DisplayController::lastUpdtHistTime=millis();
+	for(int i=60-1;i>0;i--){//сдвиг
+		DisplayController::powerHistory[i]=DisplayController::powerHistory[i-1];
 	}
+	
+	DisplayController::powerHistory[0]=data.power;//запись нового значения
 }
