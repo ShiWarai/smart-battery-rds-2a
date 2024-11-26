@@ -8,6 +8,8 @@ void DisplayController::displayTask(void *pvParameters) {
 
 	bool display_enabled = false;
     const int display_frequency = 200;
+	uint16_t screen;
+	DisplayController::lastUpdtHistTime = millis();
 
 	Button display_button(BUTTONS_PIN, INPUT);
 	pinMode(OLED_PWR_PIN, OUTPUT);
@@ -22,6 +24,7 @@ void DisplayController::displayTask(void *pvParameters) {
 	case BATTERY_MODS::POWERSAVE:
 		while(true) {
 			display_button.tick();
+			updatingHistory(*raw_data);
 
 			if(display_button.holdFor(CHANGE_MODE_HOLD_TIME))
 				invertMode();
@@ -40,11 +43,16 @@ void DisplayController::displayTask(void *pvParameters) {
 					}
 				}
 
+				screen=0;
+
 				for(int i = 0; i < (settings.display_time/display_frequency); i++)
 				{
+					updatingHistory(*raw_data);
+					display_button.tick();
+					if(display_button.click()){screen++;i=0;}
 					if (xSemaphoreTake(wireMutex, portMAX_DELAY) == pdTRUE)
 					{
-						DisplayController::printStatus(&oled, *raw_data);
+						screenSwitch(&oled, screen);
 						
 						xSemaphoreGive(wireMutex);
 						vTaskDelay(display_frequency);
@@ -58,13 +66,16 @@ void DisplayController::displayTask(void *pvParameters) {
 	case BATTERY_MODS::FULL:
 		while(true) {
 			display_button.tick();
+			updatingHistory(*raw_data);
 
 			if(display_button.holdFor(CHANGE_MODE_HOLD_TIME))
 				invertMode();
 
+			if(display_button.click()){screen++;}
+
 			if (xSemaphoreTake(wireMutex, portMAX_DELAY) == pdTRUE)
 			{
-				DisplayController::printStatus(&oled, *raw_data);
+				screenSwitch(&oled, screen);
 				xSemaphoreGive(wireMutex);
 				vTaskDelay(display_frequency);
 			}
@@ -94,6 +105,15 @@ void DisplayController::turnOnDisplay(U8G2_SSD1306_64X32_1F_F_HW_I2C *oled) {
 void DisplayController::turnOffDisplay(U8G2_SSD1306_64X32_1F_F_HW_I2C *oled) {
 	oled->clearDisplay();
 	digitalWrite(OLED_PWR_PIN, LOW);	
+}
+
+void DisplayController::screenSwitch(U8G2_SSD1306_64X32_1F_F_HW_I2C *oled, uint16_t screen) {
+	switch(screen%4) {
+		case 0: DisplayController::printStatus(oled, *raw_data); break;
+		case 1: DisplayController::printSecondMenu(oled, *raw_data); break;
+		case 2: DisplayController::printHistoryMenu(oled, *raw_data, 0); break;
+		case 3: DisplayController::printHistoryMenu(oled, *raw_data, 1); break;
+	}
 }
 
 void DisplayController::printStatus(U8G2_SSD1306_64X32_1F_F_HW_I2C *oled, INA226Data data, bool changeContrast, byte contrast) // routine for printing simple interface on an OLED display
@@ -148,4 +168,104 @@ void DisplayController::printStatus(U8G2_SSD1306_64X32_1F_F_HW_I2C *oled, INA226
 	
 	// send frame buffer to the display
 	oled->sendBuffer();
+}
+
+void DisplayController::printSecondMenu(U8G2_SSD1306_64X32_1F_F_HW_I2C *oled, INA226Data data, bool changeContrast, byte contrast) // routine for printing simple interface on an OLED display
+{
+	// clear frame buffer and set display brightness if needed
+	oled->clearBuffer();
+	if (changeContrast) {
+		oled->setContrast(contrast);
+	}
+
+	// obtain voltage from power monitor and prepare values
+	uint32_t id = *data.id;
+	String wifissid = settings.wifi_ssid;
+	//WiFi.status()
+
+	// create a string with formatted percentage value
+	String buffer;
+
+	// рисуем номер аккумулятора
+	buffer = String("ID:") + String(id);
+	buffer.trim();
+	oled->setFont(u8g2_font_4x6_mr);
+	oled->drawStr(0, 6, buffer.c_str());
+
+	const uint8_t wifiBitmap8x6[] = {
+		0x7E, // 01111110
+		0x81, // 10000001
+		0x3C, // 00111100
+		0x42, // 01000010
+		0x18, // 00011000
+		0x18  // 00011000
+	};
+
+	oled->drawBitmap(20, 0, 1,6,wifiBitmap8x6);
+	// рисуем статус wifi
+	if(WiFi.status()==WL_CONNECTED){
+	oled->setFont(u8g2_font_4x6_mr); // set big font
+	oled->drawStr(29, 6, "connected");}
+
+	// рисуем wifi ssid
+	buffer = String(wifissid);
+	buffer.trim();
+	oled->setFont(u8g2_font_spleen6x12_mr); // set big font
+	oled->drawStr(0, 17, buffer.c_str());
+	oled->drawStr(-64, 28, buffer.c_str());
+
+	oled->sendBuffer();
+}
+
+void DisplayController::printHistoryMenu(U8G2_SSD1306_64X32_1F_F_HW_I2C *oled, INA226Data data, bool scale, bool changeContrast, byte contrast) // routine for printing simple interface on an OLED display
+{
+	oled->clearBuffer();
+	if (changeContrast) {
+		oled->setContrast(contrast);
+	}
+
+	// obtain voltage from power monitor and prepare values
+	uint32_t id = *data.id;
+	
+	// create a string with formatted percentage value
+	String buffer;
+
+	// рисуем номер аккумулятора
+	buffer = String("ID:") + String(id);
+	buffer.trim();
+	oled->setFont(u8g2_font_4x6_mr);
+	oled->drawStr(0, 6, buffer.c_str());
+
+	//рисуем историю
+	oled->setFont(u8g2_font_4x6_mr);
+	oled->drawStr(25, 5, "history");
+
+	// берём крайние значения
+    int minHistry = DisplayController::powerHistory[0];
+    int maxHistry = DisplayController::powerHistory[0];
+    for (int i = 1; i < (scale+1)*30; i++) {
+        if (DisplayController::powerHistory[i] < minHistry)
+            minHistry = DisplayController::powerHistory[i];
+        if (DisplayController::powerHistory[i] > maxHistry)
+            maxHistry = DisplayController::powerHistory[i];
+    }
+	
+	// рисуем график
+	for(int i=0;i<(scale+1)*30;i++){
+		int hhist=map(long(DisplayController::powerHistory[i]),long(minHistry),long(maxHistry),long(1),long(25));
+		oled->drawBox(62-((2-scale)*i), 32-hhist, 1, hhist);
+	}
+
+	// send frame buffer to the display
+	oled->sendBuffer();
+}
+
+void DisplayController::updatingHistory(INA226Data data){
+	if(millis()-DisplayController::lastUpdtHistTime>=1000){
+		for(int i=60-1;i>0;i--){//сдвиг
+			DisplayController::powerHistory[i]=DisplayController::powerHistory[i-1];
+		}
+		DisplayController::powerHistory[0]=data.power;//запись нового значения
+		DisplayController::lastUpdtHistTime=millis();
+	}
 }
