@@ -29,27 +29,22 @@ FIELDS(DECLARE_SERIALIZE_ITER, JSON_NAME, SETTINGS_NAME)
 unsigned long ota_progress_millis = 0;
 
 void onOTAStart() {
-  // Log when OTA has started
-  Serial.println("OTA update started!");
-  // <Add your own code here>
+	Serial.println("OTA: Обновление запущено!");
 }
 
 void onOTAProgress(size_t current, size_t final) {
-  // Log every 1 second
-  if (millis() - ota_progress_millis > 1000) {
-    ota_progress_millis = millis();
-    Serial.printf("OTA Progress Current: %u bytes, Final: %u bytes\n", current, final);
-  }
+	if (millis() - ota_progress_millis > 1000) {
+		ota_progress_millis = millis();
+		Serial.printf("OTA: Загружено %u байт из конечных %u байт\r\n", current, final);
+	}
 }
 
 void onOTAEnd(bool success) {
-  // Log when OTA has finished
-  if (success) {
-    Serial.println("OTA update finished successfully!");
-  } else {
-    Serial.println("There was an error during OTA update!");
-  }
-  // <Add your own code here>
+	if (success) {
+		Serial.println("OTA: Обновление завершено успешно!");
+	} else {
+		Serial.println("OTA: Произошли ошибки при обновлении!");
+	}
 }
 
 
@@ -217,14 +212,22 @@ void WirelessController::wirelessTask(void *pvParameters)
 		}
 	);
 
+
+	// OTA
 	ElegantOTA.begin(&server);
 
+	String user = String("battery_") + settings.battery_id;
+	String password = settings.access_key;
+	ElegantOTA.setAuth(user.c_str(), password.c_str());
+	ElegantOTA.setAutoReboot(true);
 	ElegantOTA.onStart(onOTAStart);
 	ElegantOTA.onProgress(onOTAProgress);
 	ElegantOTA.onEnd(onOTAEnd);
+	//
+
 
 	server.begin(); // Запускаем сервер
-	
+
 
 	// Настраиваем работу с СУБД
 	Point data_point("battery");
@@ -234,6 +237,8 @@ void WirelessController::wirelessTask(void *pvParameters)
 	
 	data_point.addTag("device", device_hostname);
 	while(true) {
+		ElegantOTA.loop();
+
 		if (WiFi.status() == WL_CONNECTED) {
 			if (client.validateConnection()) {
 				data_point.clearFields();
