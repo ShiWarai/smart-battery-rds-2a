@@ -1,7 +1,10 @@
 #include "main.hpp"
 
+
+
 void setup()
 {
+	WRITE_PERI_REG(RTC_CNTL_BROWN_OUT_REG, 0); // Отключение детекции падения тока
 	Serial.begin(115200); // Временно до появление логов
 
 	SemaphoreHandle_t wireMutex = xSemaphoreCreateMutex();
@@ -20,5 +23,5 @@ void setup()
 	vTaskDelay(3000);
 
 	xTaskCreate(UsbController::usbTask, "USB task", 4096, NULL, 2, NULL);
-	xTaskCreate(WirelessController::wirelessTask, "Wireless task", 32000, NULL, 2, NULL);
+	xTaskCreate(WirelessController::wirelessTask, "Wireless task", 16384, NULL, 2, NULL);
 }

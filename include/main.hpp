@@ -9,6 +9,8 @@
 #include <display_controller/display_controller.hpp>
 #endif
 #include <self_checking/self_checking.hpp>
+#include "soc/soc.h"
+#include "soc/rtc_cntl_reg.h"
 
 // Functions
 void setup();

@@ -107,8 +107,6 @@ void WirelessController::wirelessTask(void *pvParameters)
 {
 	String device_hostname = String("battery_") + String(settings.battery_id);
 
-	AsyncWebServer server(PORT); // Веб-сервер
-
 	WiFi.setHostname(device_hostname.c_str()); 
 	WiFi.begin(settings.wifi_ssid, settings.wifi_password);
 
@@ -118,7 +116,9 @@ void WirelessController::wirelessTask(void *pvParameters)
 	while (!MDNS.begin(device_hostname.c_str()))
 		vTaskDelay(500);
 	MDNS.addService("http", "tcp", 80);
+
 	
+	AsyncWebServer server(PORT); // Веб-сервер
 
 	DefaultHeaders::Instance().addHeader("Access-Control-Allow-Origin", "*");
  	DefaultHeaders::Instance().addHeader("Access-Control-Allow-Methods", "GET, POST, PUT");
