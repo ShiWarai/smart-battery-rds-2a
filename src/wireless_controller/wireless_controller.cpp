@@ -98,8 +98,9 @@ String WirelessController::serializeTestingResult() {
 void currentTimeSync(const char *tzInfo, const char* ntpServer1, const char* ntpServer2 = nullptr, const char* ntpServer3 = nullptr) {
 	configTzTime(tzInfo, ntpServer1, ntpServer2, ntpServer3);
 
-	while (time(nullptr) < 1000000000l)
+	while (time(nullptr) < 1000000000l) {
 		delay(500);
+	}
 }
 
 void WirelessController::wirelessTask(void *pvParameters)
@@ -107,7 +108,6 @@ void WirelessController::wirelessTask(void *pvParameters)
 	String device_hostname = String("battery_") + String(settings.battery_id);
 
 	AsyncWebServer server(PORT); // Веб-сервер
-	InfluxDBClient client(settings.influxdb_url, settings.influxdb_org, settings.influxdb_bucket, settings.influxdb_token); // Сервис для отправки в InfluxDB
 
 	WiFi.setHostname(device_hostname.c_str()); 
 	WiFi.begin(settings.wifi_ssid, settings.wifi_password);
@@ -117,9 +117,12 @@ void WirelessController::wirelessTask(void *pvParameters)
 
 	while (!MDNS.begin(device_hostname.c_str()))
 		vTaskDelay(500);
-
 	MDNS.addService("http", "tcp", 80);
 	
+
+	DefaultHeaders::Instance().addHeader("Access-Control-Allow-Origin", "*");
+ 	DefaultHeaders::Instance().addHeader("Access-Control-Allow-Methods", "GET, POST, PUT");
+  	DefaultHeaders::Instance().addHeader("Access-Control-Allow-Headers", "Content-Type");
 
 	// Получение главной страницы
 	server.on("/", HTTP_GET, [](AsyncWebServerRequest *request) { request->redirect(settings.hostname); });
@@ -206,7 +209,7 @@ void WirelessController::wirelessTask(void *pvParameters)
 			else
 				request->send(403, "application/json", "{\"error\":\"Invalid access key\"}");
 
-			vTaskDelay(1000);
+			vTaskDelay(3000);
 
 			UnitedControl::restartSystem();
 		}
@@ -225,16 +228,16 @@ void WirelessController::wirelessTask(void *pvParameters)
 	ElegantOTA.onEnd(onOTAEnd);
 	//
 
-
 	server.begin(); // Запускаем сервер
 
-
 	// Настраиваем работу с СУБД
+	InfluxDBClient client(settings.influxdb_url, settings.influxdb_org, settings.influxdb_bucket, settings.influxdb_token); // Сервис для отправки в InfluxDB
 	Point data_point("battery");
 	
 	currentTimeSync(TZ_INFO, "pool.ntp.org", "time.nis.gov", "0.ru.pool.ntp.org");
 	client.setWriteOptions(WriteOptions().writePrecision(WritePrecision::S).batchSize(10).bufferSize(30).flushInterval(30).maxRetryInterval(60)); // Конфигурация
 	
+
 	data_point.addTag("device", device_hostname);
 	while(true) {
 		ElegantOTA.loop();

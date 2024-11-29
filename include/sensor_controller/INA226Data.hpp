@@ -23,7 +23,7 @@ public:
 	float power;
 	float capacity;
 	time_t timestamp;
-	unsigned long long timestamp_ms;
+	uint64_t timestamp_ms;
 
 	INA226Data(uint32_t* id) {
 		this->id = id;
@@ -36,7 +36,7 @@ public:
 		this->capacity = FLOAT_MAP(sensor->getBusVoltage(),3.3,4.2,0.0,100.0);
 		this->timestamp = time(nullptr);
 		#ifdef MS_MEASUREMENTS_ENABLE
-		this->timestamp_ms = this->timestamp * 1000 + (esp_timer_get_time() / 1000) % 1000;
+		this->timestamp_ms = uint64_t(this->timestamp) * 1000 + (esp_timer_get_time() / 1000) % 1000;
 		#endif
 	};
 
@@ -47,10 +47,10 @@ public:
 		json["A"] = round2(this->current);
 		json["P"] = round2(this->power);
 		json["C"] = round2(this->capacity);
-		#ifdef MS_MEASUREMENTS_ENABLE
-		json["t"] = this->timestamp * 1000 + esp_timer_get_time() / 1000;
-		#else
+		#ifndef MS_MEASUREMENTS_ENABLE
 		json["T"] = this->timestamp;
+		#else
+		json["t"] = this->timestamp_ms;
 		#endif
 
 		// Конвертируем JSON-документ в строку

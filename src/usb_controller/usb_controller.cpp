@@ -163,9 +163,7 @@ void UsbController::settingsMenu() {
     }
 }
 
-void UsbController::usbTask(void *pvParameters) {
-	Serial.begin(115200);
-
+void UsbController::usbTask(void *pvParameters) {\
 	while(true) {
 		if(Serial.isConnected())
 		{
