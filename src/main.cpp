@@ -13,7 +13,8 @@ void setup()
 
 	xTaskCreate(PreferencesController::preferencesTask, "Preferences task", 4096, NULL, 1, NULL);
 
-	while(settings.battery_id == 0) vTaskDelay(100); // Ожидаем загрузки настроек в ОЗУ
+	while(settings.battery_id == 0) // Ожидаем загрузки настроек в ОЗУ
+		vTaskDelay(100);
 
 	#ifdef WITH_DISPLAY
 	xTaskCreate(DisplayController::displayTask, "Display task", 4096, wireMutex, 1, NULL);

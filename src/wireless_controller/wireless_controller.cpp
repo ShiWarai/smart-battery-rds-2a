@@ -134,8 +134,15 @@ void WirelessController::wirelessTask(void *pvParameters)
 	
 	// Получение данных метрик
 	server.on("/data", HTTP_GET, [](AsyncWebServerRequest *request) {
-		request->send(200, "application/json", raw_data->getJSON()); }
-	);
+		int N = 1; // По умолчанию используем METRICS_BUFFER_SIZE
+		if (request->hasParam("n"))
+			N = request->getParam("n")->value().toInt();
+		
+		if(N > 0 && N <= METRICS_BUFFER_SIZE)
+			request->send(200, "application/json", raw_data->getJSON(N));
+		else
+			request->send(403, "application/json", "{\"error\":\"Invalid size of metrics\"}");
+	});
 
 	// Получение настроек
 	server.on("/settings", HTTP_GET, 
@@ -146,7 +153,7 @@ void WirelessController::wirelessTask(void *pvParameters)
 			} 
 			else { 
 				request->send(403, "application/json", "{\"error\":\"Invalid API key\"}"); 
-			} 
+			}
 		}
 	);
 
@@ -164,7 +171,7 @@ void WirelessController::wirelessTask(void *pvParameters)
 						request->send(200, "application/json", "{\"message\":\"Settings updated\"}");
 					else {
 						request->send(200, "application/json", "{\"message\":\"Restart to update settings...\"}");
-						UnitedControl::restartSystem();
+						xTaskCreate([](void *){UnitedControl::restartSystem(1000);}, "restartTask", 512, NULL, 0, NULL);
 					}
 				}
 				else
@@ -176,23 +183,22 @@ void WirelessController::wirelessTask(void *pvParameters)
 	);
 
 	// Запуск тестирования
-	server.on("/testing", HTTP_POST,
+	server.on("/selfcheck", HTTP_POST,
 		[](AsyncWebServerRequest *request) {
 			if (request->hasHeader("api_key") && request->header("api_key") == settings.access_key)
 			{
 				UnitedControl::startTest(false);
 
 				request->send(200, "application/json", "{\"message\":\"Restart ESP32 to start testing...\"}");
+				xTaskCreate([](void *){UnitedControl::restartSystem(1000);}, "restartTask", 512, NULL, 0, NULL);
 			}
 			else
 				request->send(403, "application/json", "{\"error\":\"Invalid access key\"}");
-
-			UnitedControl::restartSystem();
 		}
 	);
 
 	// Чтение результатов тестирование
-	server.on("/testing", HTTP_GET,
+	server.on("/selfcheck", HTTP_GET,
 		[](AsyncWebServerRequest *request) {
 			if (request->hasHeader("api_key") && request->header("api_key") == settings.access_key)
 				request->send(200, "application/json", WirelessController::serializeTestingResult());
@@ -204,14 +210,12 @@ void WirelessController::wirelessTask(void *pvParameters)
 	// Рестарт
 	server.on("/restart", HTTP_POST,
 		[](AsyncWebServerRequest *request) {
-			if (request->hasHeader("api_key") && request->header("api_key") == settings.access_key)
+			if (request->hasHeader("api_key") && request->header("api_key") == settings.access_key) {
 				request->send(200, "application/json", "{\"message\":\"Restart ESP32...\"}");
+				xTaskCreate([](void *){UnitedControl::restartSystem(1000);}, "restartTask", 512, NULL, 0, NULL);
+			}
 			else
 				request->send(403, "application/json", "{\"error\":\"Invalid access key\"}");
-
-			vTaskDelay(3000);
-
-			UnitedControl::restartSystem();
 		}
 	);
 
@@ -234,7 +238,7 @@ void WirelessController::wirelessTask(void *pvParameters)
 	InfluxDBClient client(settings.influxdb_url, settings.influxdb_org, settings.influxdb_bucket, settings.influxdb_token); // Сервис для отправки в InfluxDB
 	Point data_point("battery");
 	
-	currentTimeSync(TZ_INFO, "pool.ntp.org", "time.nis.gov", "0.ru.pool.ntp.org");
+	currentTimeSync(TZ_INFO, "2.ru.pool.ntp.org", "0.ru.pool.ntp.org", "pool.ntp.org");
 	client.setWriteOptions(WriteOptions().writePrecision(WritePrecision::S).batchSize(10).bufferSize(30).flushInterval(30).maxRetryInterval(60)); // Конфигурация
 	
 

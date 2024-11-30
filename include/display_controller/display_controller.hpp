@@ -1,10 +1,11 @@
 #pragma once
 
 #include <U8g2lib.h>
+#include <algorithm>
 #include <EncButton.h>
+#include <WiFi.h>
 #include "sensor_controller/INA226Data.hpp"
 #include "preferences_controller/settings.hpp"
-#include <WiFi.h>
 
 #define CHANGE_MODE_HOLD_TIME 5000
 

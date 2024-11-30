@@ -96,8 +96,8 @@ void UsbController::comMenu() {
         Serial.println("\r\nМеню:");
         Serial.println("1) Настройки");
         Serial.println("2) Вывести информацию о системе");
-        Serial.println("3) Тест");
-        Serial.println("4) Результаты теста");
+        Serial.println("3) Самопроверка");
+        Serial.println("4) Результаты самопроверки");
         Serial.println("5) Рестарт");
         Serial.println("6) Сброс(очистка памяти + рестарт)");
         Serial.println("0) Выйти");
@@ -118,11 +118,11 @@ void UsbController::comMenu() {
             case 4:
                 Serial.println("\r\nРезультаты тестирования:");
 
-                Serial.print("Buzzer integrationTest: "); Serial.println(results.buzzerTest ? "Passed" : "Failed"); 
-                Serial.print("Display integrationTest: "); Serial.println(results.displayTest ? "Passed" : "Failed"); 
-                Serial.print("INA226 integrationTest: "); Serial.println(results.ina226Test ? "Passed" : "Failed"); 
-                Serial.print("WiFi integrationTest: "); Serial.println(results.wifiTest ? "Passed" : "Failed"); 
-                Serial.print("Database integrationTest: "); Serial.println(results.databaseTest ? "Passed" : "Failed");
+                Serial.print("Buzzer integration: "); Serial.println(results.buzzerTest ? "Passed" : "Failed"); 
+                Serial.print("Display integration: "); Serial.println(results.displayTest ? "Passed" : "Failed"); 
+                Serial.print("INA226 integration: "); Serial.println(results.ina226Test ? "Passed" : "Failed"); 
+                Serial.print("WiFi integration: "); Serial.println(results.wifiTest ? "Passed" : "Failed"); 
+                Serial.print("Database integration: "); Serial.println(results.databaseTest ? "Passed" : "Failed");
                 break;
             case 5:
                 ESP.restart();
@@ -144,6 +144,7 @@ void UsbController::outputInfo() {
     Serial.printf("\r\nАккумулятор #%d\r\n", settings.battery_id);
 
     Serial.printf("Текущий IP: %s\r\n", WiFi.localIP().toString());
+    Serial.printf("Текущий уровень свободной памяти в куче:\t%d (bytes)\r\n", ESP.getFreeHeap());
 }
 
 void UsbController::settingsMenu() {

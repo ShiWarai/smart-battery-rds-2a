@@ -9,7 +9,7 @@ class UnitedControl
 {
  public:
     static void writeToMemory(std::variant<String, float, uint32_t, nullptr_t> BUFFER, SETTING_TYPE NAME);
-    static void restartSystem();
+    static void restartSystem(time_t delay = 0);
     static void startTest(bool needRestart=true);
     static IntegrationTestResult readTestResults();
  private:

@@ -122,7 +122,7 @@ void DisplayController::turnOffDisplay(U8G2_SSD1306_64X32_1F_F_HW_I2C *oled) {
 	digitalWrite(OLED_PWR_PIN, LOW);	
 }
 
-void DisplayController::printStatus(U8G2_SSD1306_64X32_1F_F_HW_I2C *oled, INA226Data data, bool changeContrast, byte contrast) // routine for printing simple interface on an OLED display
+void DisplayController::printStatus(U8G2_SSD1306_64X32_1F_F_HW_I2C *oled, INA226Data data, bool changeContrast, byte contrast)
 {
 	// clear frame buffer and set display brightness if needed
 	oled->clearBuffer();
@@ -133,7 +133,7 @@ void DisplayController::printStatus(U8G2_SSD1306_64X32_1F_F_HW_I2C *oled, INA226
 	// obtain voltage from power monitor and prepare values
 	uint32_t id = *data.id;
 	double voltage = data.voltage;
-	double percentage = data.capacity;
+	double percentage = std::max(std::min(data.capacity, 100.0f), 0.0f); // Удаляем потенциальное неподходящее значение
 	double power = data.power;
 	
 	// create a string with formatted percentage value

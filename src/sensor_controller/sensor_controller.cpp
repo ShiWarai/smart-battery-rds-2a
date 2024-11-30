@@ -4,9 +4,13 @@ void SensorController::sensorTask(void *pvParameters) {
 	
 	SemaphoreHandle_t wireMutex = static_cast<SemaphoreHandle_t>(pvParameters);
 
+	#ifndef WITH_DISPLAY
+	Wire.begin();
+	#endif
+
 	INA226 INA = INA226(0x40);
 
-    raw_data = new INA226Data(&settings.battery_id);
+    raw_data = new INA226Data(&settings.battery_id, INA.getBusVoltage());
 
 	if (!INA.begin() && Serial.isConnected())
 		Serial.println("it was not possible to connect to the voltampermeter. Fix the error");

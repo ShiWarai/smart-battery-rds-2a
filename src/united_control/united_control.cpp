@@ -27,6 +27,9 @@ IntegrationTestResult UnitedControl::readTestResults() {
     return SelfChecking::getIntegrationTestResults();
 }
 
-void UnitedControl::restartSystem(){
+void UnitedControl::restartSystem(time_t delay){
+    if(delay > 0)
+        vTaskDelay(delay);
+        
     ESP.restart();
 }

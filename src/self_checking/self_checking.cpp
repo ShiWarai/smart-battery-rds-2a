@@ -21,6 +21,7 @@ void SelfChecking::integrationTest() {
         pref_test.putBool("buzzer", true);
 
         // OLED дисплей
+        #ifdef WITH_DISPLAY
         pinMode(OLED_PWR_PIN, OUTPUT);
         //Wire.end();
         digitalWrite(OLED_PWR_PIN, HIGH); // Включение питания дисплея
@@ -32,6 +33,9 @@ void SelfChecking::integrationTest() {
         oled.sendBuffer();
         Serial.println("Дисплей включился и выключился");
         pref_test.putBool("display", true);
+        #else
+        Wire.begin();
+        #endif
 
         // INA226
         INA226 ina226(0x40);
@@ -87,7 +91,9 @@ void SelfChecking::integrationTest() {
         }
         WiFi.disconnect(true, true);
 
+        #ifdef WITH_DISPLAY
         oled.clearDisplay();
+        #endif
         digitalWrite(OLED_PWR_PIN, LOW); // Выключение питания дисплея
         Wire.end();
 
