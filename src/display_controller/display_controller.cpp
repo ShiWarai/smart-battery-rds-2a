@@ -9,7 +9,6 @@ void DisplayController::displayTask(void *pvParameters) {
 	bool display_enabled = false;
 	unsigned long current_time;
 	unsigned long display_shutdown_timer;
-	unsigned long history_update_timer;
     const int display_frequency = 200;
 	SCREEN_MODE screen_mode = settings.mode == BATTERY_MOD::FULL ? SCREEN_MODE::MAIN : SCREEN_MODE::NONE;
 
@@ -32,10 +31,6 @@ void DisplayController::displayTask(void *pvParameters) {
 			if(display_shutdown_timer >= settings.display_time)
 				screen_mode = SCREEN_MODE::NONE;
 		}
-
-		history_update_timer += (current_time - last_time);
-		if(history_update_timer >= 1000)
-			updatingHistory(*raw_data);
 
 		last_time = current_time;
 
@@ -247,29 +242,14 @@ void DisplayController::printHistoryMenu(U8G2_SSD1306_64X32_1F_F_HW_I2C *oled, I
 	oled->drawStr(25, 5, "history");
 
 	// берём крайние значения
-    int minHistry = DisplayController::powerHistory[0];
-    int maxHistry = DisplayController::powerHistory[0];
-    for (int i = 1; i < (scale+1)*30; i++) {
-        if (DisplayController::powerHistory[i] < minHistry)
-            minHistry = DisplayController::powerHistory[i];
-        if (DisplayController::powerHistory[i] > maxHistry)
-            maxHistry = DisplayController::powerHistory[i];
-    }
+    auto minmax = std::minmax_element(std::begin(raw_data->powerBuffer), std::end(raw_data->powerBuffer));
 	
 	// рисуем график
-	for(int i=0;i<(scale+1)*30;i++){
-		int hhist=map(long(DisplayController::powerHistory[i]),long(minHistry),long(maxHistry),long(1),long(25));
+	for(int i=0; i < METRICS_BUFFER_SIZE; i++){
+		//int hhist = (int)FLOAT_MAP(raw_data->powerBuffer[i], (float)minmax.first, minmax.second, 1.0, 25.0);
 		oled->drawBox(62-((2-scale)*i), 32-hhist, 1, hhist);
 	}
 
 	// send frame buffer to the display
 	oled->sendBuffer();
-}
-
-void DisplayController::updatingHistory(INA226Data data){
-	for(int i=60-1;i>0;i--){//сдвиг
-		DisplayController::powerHistory[i]=DisplayController::powerHistory[i-1];
-	}
-	
-	DisplayController::powerHistory[0]=data.power;//запись нового значения
 }

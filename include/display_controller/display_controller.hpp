@@ -30,7 +30,4 @@ class DisplayController
         static void turnOnDisplay(U8G2_SSD1306_64X32_1F_F_HW_I2C *oled);
         static void turnOffDisplay(U8G2_SSD1306_64X32_1F_F_HW_I2C *oled);
         static void invertMode();
-        static void updatingHistory(INA226Data data);
-
-        inline static uint32_t powerHistory[60];
 };
