@@ -9,7 +9,7 @@ void DisplayController::displayTask(void *pvParameters) {
 	bool display_enabled = false;
 	unsigned long current_time;
 	unsigned long display_shutdown_timer;
-    const int display_frequency = 200;
+    const int display_frequency = 100;
 	SCREEN_MODE screen_mode = settings.mode == BATTERY_MOD::FULL ? SCREEN_MODE::MAIN : SCREEN_MODE::NONE;
 
 	Button display_button(BUTTONS_PIN, INPUT);
@@ -72,8 +72,11 @@ void DisplayController::displayTask(void *pvParameters) {
 					case SCREEN_MODE::WIFI: 
 						DisplayController::printSecondMenu(&oled, *raw_data);
 						break;
-					case SCREEN_MODE::CHART: 
-						DisplayController::printHistoryMenu(&oled, *raw_data, 1);
+					case SCREEN_MODE::POWER_CHART: 
+						DisplayController::printHistoryMenu(&oled, *raw_data, screen_mode, 1);
+						break;
+					case SCREEN_MODE::VOLTAGE_CHART: 
+						DisplayController::printHistoryMenu(&oled, *raw_data, screen_mode, 1);
 						break;
 					default:
 						break;
@@ -186,12 +189,13 @@ void DisplayController::printSecondMenu(U8G2_SSD1306_64X32_1F_F_HW_I2C *oled, IN
 
 	// create a string with formatted percentage value
 	String buffer;
-
+	
 	// рисуем номер аккумулятора
-	buffer = String("ID:") + String(id);
+	buffer = String(WiFi.RSSI())+String("dBm");
 	buffer.trim();
 	oled->setFont(u8g2_font_4x6_mr);
 	oled->drawStr(0, 6, buffer.c_str());
+	
 
 	const uint8_t wifiBitmap8x6[] = {
 		0x7E, // 01111110
@@ -201,24 +205,23 @@ void DisplayController::printSecondMenu(U8G2_SSD1306_64X32_1F_F_HW_I2C *oled, IN
 		0x18, // 00011000
 		0x18  // 00011000
 	};
-
-	oled->drawBitmap(20, 0, 1,6,wifiBitmap8x6);
+	
 	// рисуем статус wifi
-	if(WiFi.status()==WL_CONNECTED){
-	oled->setFont(u8g2_font_4x6_mr); // set big font
-	oled->drawStr(29, 6, "connected");}
+	oled->setFont(u8g2_font_4x6_mr);
+	if(WiFi.status()==WL_CONNECTED){oled->drawBitmap(56, 0, 1,6,wifiBitmap8x6);
+	}else{oled->drawBox(59,4,2,2);}
 
 	// рисуем wifi ssid
 	buffer = String(wifissid);
 	buffer.trim();
-	oled->setFont(u8g2_font_spleen6x12_mr); // set big font
-	oled->drawStr(0, 17, buffer.c_str());
-	oled->drawStr(-64, 28, buffer.c_str());
+	oled->setFont(u8g2_font_4x6_mr); // set big font
+	oled->drawStr(0, 17, "SSID:");
+	oled->drawStr(0, 28, buffer.c_str());
 
 	oled->sendBuffer();
 }
 
-void DisplayController::printHistoryMenu(U8G2_SSD1306_64X32_1F_F_HW_I2C *oled, INA226Data data, bool scale, bool changeContrast, byte contrast) // routine for printing simple interface on an OLED display
+void DisplayController::printHistoryMenu(U8G2_SSD1306_64X32_1F_F_HW_I2C *oled, INA226Data data, SCREEN_MODE mode, bool scale, bool changeContrast, byte contrast) // routine for printing simple interface on an OLED display
 {
 	oled->clearBuffer();
 	if (changeContrast) {
@@ -239,15 +242,32 @@ void DisplayController::printHistoryMenu(U8G2_SSD1306_64X32_1F_F_HW_I2C *oled, I
 
 	//рисуем историю
 	oled->setFont(u8g2_font_4x6_mr);
-	oled->drawStr(25, 5, "history");
 
-	// берём крайние значения
-    auto minmax = std::minmax_element(std::begin(raw_data->powerBuffer), std::end(raw_data->powerBuffer));
-	
-	// рисуем график
-	for(int i=0; i < METRICS_BUFFER_SIZE; i++){
-		//int hhist = (int)FLOAT_MAP(raw_data->powerBuffer[i], (float)minmax.first, minmax.second, 1.0, 25.0);
-		oled->drawBox(62-((2-scale)*i), 32-hhist, 1, hhist);
+	std::pair<std::deque<float>::iterator, std::deque<float>::iterator> minmax;
+	switch(mode) {
+		case SCREEN_MODE::POWER_CHART:
+			oled->drawStr(25, 5, "Power");
+
+			// берём крайние значения
+			minmax = std::minmax_element(std::begin(raw_data->powerBuffer), std::end(raw_data->powerBuffer));
+			
+			// рисуем график
+			for(int i=0; i < METRICS_BUFFER_SIZE; i++){
+				int hhist = (int)FLOAT_MAP(raw_data->powerBuffer[i], *minmax.first, *minmax.second, 1.0, 25.0);
+				oled->drawBox(62-((2-scale)*i), 32-hhist, 1, hhist);
+			}
+			break;
+		case SCREEN_MODE::VOLTAGE_CHART:
+			// берём крайние значения
+			minmax = std::minmax_element(std::begin(raw_data->voltageBuffer), std::end(raw_data->voltageBuffer));
+			buffer = String("V(")+String(*minmax.first, 1)+String("-")+String(*minmax.second, 1)+String(")");
+			oled->drawStr(22, 5, buffer.c_str());
+			// рисуем график
+			for(int i=0; i < METRICS_BUFFER_SIZE; i++){
+				int hhist = (int)FLOAT_MAP(raw_data->voltageBuffer[i], *minmax.first, *minmax.second, 1.0, 25.0);
+				oled->drawBox(62-((2-scale)*i), 32-hhist, 1, hhist);
+			}
+			break;
 	}
 
 	// send frame buffer to the display

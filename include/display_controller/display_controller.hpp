@@ -13,7 +13,8 @@ enum SCREEN_MODE {
     NONE,
     MAIN,
     WIFI,
-    CHART,
+    POWER_CHART,
+    VOLTAGE_CHART,
     COUNT
 };
 
@@ -24,7 +25,7 @@ class DisplayController
     private:
         static void displayScreen(U8G2_SSD1306_64X32_1F_F_HW_I2C *oled, SCREEN_MODE screen_mode);
 
-        static void printHistoryMenu(U8G2_SSD1306_64X32_1F_F_HW_I2C *oled, INA226Data data, bool scale, bool changeContrast = false, byte contrast = 255);
+        static void printHistoryMenu(U8G2_SSD1306_64X32_1F_F_HW_I2C *oled, INA226Data data, SCREEN_MODE mode, bool scale, bool changeContrast = false, byte contrast = 255);
         static void printSecondMenu(U8G2_SSD1306_64X32_1F_F_HW_I2C *oled, INA226Data data, bool changeContrast = false, byte contrast = 255);
         static void printStatus(U8G2_SSD1306_64X32_1F_F_HW_I2C *oled, INA226Data data, bool changeContrast = false, byte contrast = 255);
         static void turnOnDisplay(U8G2_SSD1306_64X32_1F_F_HW_I2C *oled);
