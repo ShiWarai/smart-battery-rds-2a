@@ -27,6 +27,7 @@ FIELDS(DECLARE_DESERIALIZE_ITER, SOURCE_STR, JSON_NAME, SETTINGS_NAME, UPDATE_QU
 FIELDS(DECLARE_SERIALIZE_ITER, JSON_NAME, SETTINGS_NAME)
 
 unsigned long ota_progress_millis = 0;
+int without_net_ti = 20000;
 
 void onOTAStart() {
 	Serial.println("OTA: Обновление запущено!");
@@ -241,25 +242,54 @@ void WirelessController::wirelessTask(void *pvParameters)
 	currentTimeSync(TZ_INFO, "2.ru.pool.ntp.org", "0.ru.pool.ntp.org", "pool.ntp.org");
 	client.setWriteOptions(WriteOptions().writePrecision(WritePrecision::S).batchSize(10).bufferSize(30).flushInterval(30).maxRetryInterval(60)); // Конфигурация
 	
-
+	unsigned long without_net_time = millis();
 	data_point.addTag("device", device_hostname);
 	while(true) {
 		ElegantOTA.loop();
 
-		if (WiFi.status() == WL_CONNECTED) {
-			if (client.validateConnection()) {
-				data_point.clearFields();
+		if(settings.wifi_mode){
+			
+			WiFi.softAP((String("battery_") + settings.battery_id), settings.access_key);
+			if (WiFi.status() == WL_CONNECTED)
+				invertWifiMode();
 
-				data_point.addField("voltage", raw_data->voltage, 2);
-				data_point.addField("current", raw_data->current, 2);
-				data_point.addField("power", raw_data->power, 2);
-				data_point.addField("capacity", raw_data->capacity, 2);
-				data_point.setTime(raw_data->timestamp);
+		}else{
+			if (WiFi.status() == WL_CONNECTED) {
+				without_net_time=0;
+				if (client.validateConnection()) {
+					data_point.clearFields();
 
-				client.writePoint(data_point);
+					data_point.addField("voltage", raw_data->voltage, 2);
+					data_point.addField("current", raw_data->current, 2);
+					data_point.addField("power", raw_data->power, 2);
+					data_point.addField("capacity", raw_data->capacity, 2);
+					data_point.setTime(raw_data->timestamp);
+
+					client.writePoint(data_point);
+				}
+			}else{
+				if(without_net_time){
+					if(millis()-without_net_time>=without_net_ti)
+						invertWifiMode();
+						
+				}else{without_net_time=millis();}
 			}
+
 		}
 
 		vTaskDelay(settings.wireless_delay);
 	}
+}
+
+void WirelessController::invertWifiMode() {
+	SettingUpdate update;
+
+	update.value = (uint32_t)!settings.wifi_mode;
+	update.key = SETTING_TYPE::wifi_mode;
+
+	xQueueSend(settingUpdateQueue, &update, portMAX_DELAY);
+
+	vTaskDelay(1000);
+
+	ESP.restart();
 }

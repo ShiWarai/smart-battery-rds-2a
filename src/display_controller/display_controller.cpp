@@ -36,7 +36,14 @@ void DisplayController::displayTask(void *pvParameters) {
 
 		if(display_button.holdFor(CHANGE_MODE_HOLD_TIME))
 			invertMode();
-
+		
+		if(display_button.hold(3)) {
+			Serial.println("Yaaa");
+			nvs_flash_erase();
+			nvs_flash_init();
+			ESP.restart();
+		}
+		
 		if(display_button.click()) {
 			screen_mode = (SCREEN_MODE) ((screen_mode + 1) % SCREEN_MODE::COUNT);
 

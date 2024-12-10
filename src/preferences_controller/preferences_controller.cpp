@@ -17,6 +17,7 @@ void PreferencesController::preferencesTask(void *pvParameters) {
 	settings.sensor_delay = 20 / portTICK_PERIOD_MS;
 	settings.display_time = 10000 / portTICK_PERIOD_MS;
 	settings.mode = 0;
+	settings.wifi_mode=0;
 	settings.influxdb_url = INFLUXDB_URL;
 	settings.influxdb_org = INFLUXDB_ORG;
 	settings.influxdb_bucket = INFLUXDB_BUCKET;

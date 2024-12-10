@@ -4,10 +4,12 @@
 #include <algorithm>
 #include <EncButton.h>
 #include <WiFi.h>
+#include <nvs_flash.h>
 #include "sensor_controller/INA226Data.hpp"
 #include "preferences_controller/settings.hpp"
 
 #define CHANGE_MODE_HOLD_TIME 5000
+#define EB_HOLD_TIME 4000    // таймаут удержания (кнопка)
 
 enum SCREEN_MODE {
     NONE,

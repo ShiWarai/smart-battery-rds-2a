@@ -18,4 +18,5 @@ private:
     static bool deserializeSettings(String json_str, bool &needReboot);
     static String serializeSettings();
     static String serializeTestingResult();
+    static void invertWifiMode();
 };
