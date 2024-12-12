@@ -90,7 +90,11 @@ error_t UsbController::read_float(float *num, error_t validator(String) = nullpt
 void UsbController::comMenu() {
 	clearInputBuffer();
     Preferences pref_test;
+    SettingUpdate update;
     uint32_t buffer_num;
+    float buffer_float;
+    float idle_consumption;
+    float consumption_with_load;
     while (true) {
         // Вывод меню
         Serial.println("\r\nМеню:");
@@ -100,6 +104,7 @@ void UsbController::comMenu() {
         Serial.println("4) Результаты самопроверки");
         Serial.println("5) Рестарт");
         Serial.println("6) Сброс(очистка памяти + рестарт)");
+        Serial.println("7) Вычисление коэффициента");
         Serial.println("0) Выйти");
         
         IntegrationTestResult results = UnitedControl::readTestResults();
@@ -131,6 +136,62 @@ void UsbController::comMenu() {
 				nvs_flash_erase();
 				nvs_flash_init();
                 ESP.restart();
+                break;
+            case 7:
+                if(settings.shunt_mult_res <= 0 || settings.shunt_mult_res == INFINITY){
+                    Serial.println("\r\nОшибка  коэффициент меньше или равен нулю, а возможно равен INF");
+                    break;
+                }
+
+                while( raw_data->current > 0) { // Заменить
+                    Serial.println("\r\nОтключите нагрузку!");
+                    vTaskDelay(1000);
+                }
+
+                Serial.println("\r\nОтключите аккумулятор от USB на 3 сек");
+
+                idle_consumption = raw_data->current;
+                while(idle_consumption <= 0) { // Заменить
+                    vTaskDelay(100);
+                    idle_consumption = raw_data->current;
+                }
+
+                while(!Serial.isConnected())
+                    vTaskDelay(10);
+                Serial.read();
+
+                while(!Serial.available())
+                    vTaskDelay(10);
+                Serial.read();
+
+                Serial.println("\r\nЗначение без нагрузки получено = "+ String(idle_consumption));
+				Serial.println("Подготовььте нагрузку (чем больше её ток, тем точнее полученный коэффициент)");
+                Serial.print("Введите ток нагрузки (в амперах): ");
+                read_float(&buffer_float);
+
+                Serial.println("\r\nВключите нагрузку и потом обратно подключитесь");
+                while(raw_data->current <= 0 || Serial.isConnected())
+                    vTaskDelay(100);
+                vTaskDelay(1000);
+
+                consumption_with_load = raw_data->current;
+
+                while(!Serial.isConnected())
+                    vTaskDelay(10);
+                Serial.read();
+
+                while(!Serial.available())
+                    vTaskDelay(10);
+                Serial.read();
+
+                update.value = ((consumption_with_load - idle_consumption)*settings.shunt_mult_res) / buffer_float;
+	            update.key = SETTING_TYPE::shunt_mult_res;
+                xQueueSend(settingUpdateQueue, &update, portMAX_DELAY);
+                vTaskDelay(1000);
+
+                Serial.println("\r\nПолученный коэффициент: " + String(settings.shunt_mult_res));
+
+                UnitedControl::restartSystem(3000);
                 break;
             default:
                 Serial.print("\r\n");

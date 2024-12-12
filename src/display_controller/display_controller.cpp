@@ -38,7 +38,6 @@ void DisplayController::displayTask(void *pvParameters) {
 			invertMode();
 		
 		if(display_button.hold(3)) {
-			Serial.println("Yaaa");
 			nvs_flash_erase();
 			nvs_flash_init();
 			ESP.restart();

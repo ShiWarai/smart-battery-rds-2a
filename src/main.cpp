@@ -5,7 +5,7 @@
 void setup()
 {
 	WRITE_PERI_REG(RTC_CNTL_BROWN_OUT_REG, 0); // Отключение детекции падения тока
-	Serial.begin(115200); // Временно до появление логов
+	Serial.begin(CONFIG_CONSOLE_UART_BAUDRATE); // Временно до появление логов
 
 	SemaphoreHandle_t wireMutex = xSemaphoreCreateMutex();
 
