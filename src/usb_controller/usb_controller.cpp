@@ -18,10 +18,17 @@ String UsbController::readInput() {
         
         if (c == '\r')
             break;
-        else
+        else if (c == 127){
+            str.remove(str.length() - 1);
+            Serial.print("\b \b");
+            }
+        else{
             Serial.print(c);
+            str += c;
+        }
 
-        str += c;
+        
+        // Serial.print(Serial.read());
     }
 
     return str;
