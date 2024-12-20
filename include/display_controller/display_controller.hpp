@@ -1,5 +1,7 @@
 #pragma once
 
+#define EB_HOLD_TIME 4000    // таймаут удержания (кнопка)
+
 #include <U8g2lib.h>
 #include <algorithm>
 #include <EncButton.h>
@@ -9,7 +11,6 @@
 #include "preferences_controller/settings.hpp"
 
 #define CHANGE_MODE_HOLD_TIME 5000
-#define EB_HOLD_TIME 4000    // таймаут удержания (кнопка)
 
 enum SCREEN_MODE {
     NONE,
