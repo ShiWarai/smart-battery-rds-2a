@@ -157,11 +157,10 @@ void UsbController::comMenu() {
 
                 Serial.println("\r\nОтключите аккумулятор от USB на 3 сек");
 
-                idle_consumption = raw_data->current;
-                while(idle_consumption <= 0) { // Заменить
+                do{ // Заменить
                     vTaskDelay(100);
                     idle_consumption = raw_data->current;
-                }
+                }while(idle_consumption <= 0);
 
                 while(!Serial.isConnected())
                     vTaskDelay(10);
