@@ -123,7 +123,14 @@ void WirelessController::wirelessTask(void *pvParameters)
 
 	DefaultHeaders::Instance().addHeader("Access-Control-Allow-Origin", "*");
  	DefaultHeaders::Instance().addHeader("Access-Control-Allow-Methods", "GET, POST, PUT");
-  	DefaultHeaders::Instance().addHeader("Access-Control-Allow-Headers", "Content-Type");
+  	DefaultHeaders::Instance().addHeader("Access-Control-Allow-Headers", "*");
+
+	// Для работы браузера
+	server.on("/*", HTTP_OPTIONS, 
+		[](AsyncWebServerRequest *request) {
+			request->send(204, "text/plain", "");
+		}
+	);
 
 	// Получение главной страницы
 	server.on("/", HTTP_GET, [](AsyncWebServerRequest *request) { request->redirect(settings.hostname); });
